@@ -3970,394 +3970,6 @@ const deliveryReport = async (req, res) => {
  
 
 
-// const consolidatedReportBranch = async (req, res) => {
-//   try {
-//     const {
-//       fromDate,
-//       toDate,
-//       fromCity,
-//       pickUpBranch,
-//       deliveryCity,
-//       deliveryBranch,
-//     } = req.body;
-
-//     const companyId = req.user?.companyId;
-
-//     if (!companyId) {
-//       return res
-//         .status(401)
-//         .json({ message: "Unauthorized: companyId missing" });
-//     }
-
-//     const companyObjectId = new mongoose.Types.ObjectId(companyId);
-
-//     const deliveryMatch = { companyId: companyObjectId };
-//     if (fromDate && toDate) {
-//       const from = new Date(fromDate);
-//       from.setHours(0, 0, 0, 0);
-//       const to = new Date(toDate);
-//       to.setHours(23, 59, 59, 999);
-//       deliveryMatch.deliveryDate = { $gte: from, $lte: to };
-//     }
-//     if (deliveryCity) deliveryMatch.deliveryCity = deliveryCity;
-//     if (deliveryBranch) deliveryMatch.deliveryBranch = deliveryBranch;
-
-//     const deliveryGrnNos = await Delivery.find(deliveryMatch)
-//       .select("grnNo toPayDeliveredAmount hamaliCharges")
-//       .lean();
-//     const grnList = deliveryGrnNos.map((d) => d.grnNo);
-
-//     const matchStage = {
-//       bookingDate: { $ne: null },
-//       companyId: companyObjectId,
-//     };
-//     if (fromDate && toDate) {
-//       const from = new Date(fromDate);
-//       from.setHours(0, 0, 0, 0);
-//       const to = new Date(toDate);
-//       to.setHours(23, 59, 59, 999);
-//       matchStage.bookingDate = { $gte: from, $lte: to };
-//     }
-//     if (fromCity) matchStage.fromCity = fromCity;
-//     if (pickUpBranch) matchStage.pickUpBranch = pickUpBranch;
-
-//     const paidDetails = await Booking.find({
-//       ...matchStage,
-//       bookingType: "paid",
-//     })
-//       .select(
-//         "grnNo lrNumber bookingDate bookedBy toCity senderName receiverName packages totalCharge serviceCharges doorPickupCharges otherCharges grandTotal"
-//       )
-//       .populate("bookedBy", "name email phone")
-//       .lean();
-
-//     const paidData = paidDetails.map((item) => ({
-//       grnNo: item.grnNo,
-//       lrNumber: item.lrNumber,
-//       bookingDate: item.bookingDate,
-//       bookedBy: item.bookedBy?.name || "N/A",
-//       toCity: item.toCity,
-//       senderName: item.senderName,
-//       receiverName: item.receiverName,
-//       toTalPackages: item.packages?.length || 0,
-//       totalCharge: item.totalCharge || 0,
-//       doorPickupCharges: item.doorPickupCharges || 0,
-//       otherCharges: item.otherCharges || 0,
-//       grandTotal: item.grandTotal || 0,
-//     }));
-
-//     const toPayDetails = await Booking.find({
-//       ...matchStage,
-//       bookingType: "toPay",
-//     })
-//       .select(
-//         "grnNo lrNumber bookingDate bookedBy toCity senderName receiverName packages serviceCharges doorPickupCharges otherCharges totalCharge grandTotal"
-//       )
-//       .populate("bookedBy", "name email phone")
-//       .lean();
-
-//     const toPayData = toPayDetails.map((item) => ({
-//       grnNo: item.grnNo,
-//       lrNumber: item.lrNumber,
-//       bookingDate: item.bookingDate,
-//       bookedBy: item.bookedBy?.name || "N/A",
-//       toCity: item.toCity,
-//       senderName: item.senderName,
-//       receiverName: item.receiverName,
-//       toTalPackages: item.packages?.length || 0,
-//       totalCharge: item.totalCharge || 0,
-//       doorPickupCharges: item.doorPickupCharges || 0,
-//       otherCharges: item.otherCharges || 0,
-//       grandTotal: item.grandTotal || 0,
-//     }));
-
-//     const deliveredToPayRaw = await Delivery.find(deliveryMatch).select(
-//       "grnNo toPayDeliveredAmount deliveryDate deliveryEmployee hamaliCharges"
-//     );
-//     const grnNos = deliveredToPayRaw.map((d) => d.grnNo);
-
-//     const matchingBookings = await Booking.find({
-//       grnNo: { $in: grnNos },
-//       bookingType: "toPay",
-//       companyId: companyObjectId,
-//     }).select(
-//       "grnNo lrNumber toCity senderName receiverName packages totalCharge doorDeliveryCharges otherCharges grandTotal"
-//     );
-
-//     const deliveredToPayData = deliveredToPayRaw
-//       .map((delivery) => {
-//         const booking = matchingBookings.find(
-//           (b) => b.grnNo === delivery.grnNo
-//         );
-//         if (!booking) return null;
-//         return {
-//           grnNo: delivery.grnNo,
-//           lrNumber: delivery.lrNumber,
-//           deliveryDate: delivery.deliveryDate,
-//           deliveryEmployee: delivery.deliveryEmployee,
-//           toPayDeliveredAmount: delivery.toPayDeliveredAmount || 0,
-//           toCity: booking.toCity,
-//           senderName: booking.senderName,
-//           receiverName: booking.receiverName,
-//           hamaliCharges: delivery.hamaliCharges || 0,
-//           totalPackages: booking.packages?.length || 0,
-//           totalAmount: booking.totalCharge || 0,
-//           doorDeliveryCharges: booking.doorDeliveryCharges || 0,
-//           otherCharges: booking.otherCharges || 0,
-//           grandTotal: booking.grandTotal || 0,
-//         };
-//       })
-//       .filter(Boolean);
-
-  
-
-// const cityWiseBookingDetails = await Booking.aggregate([
-//   {
-//     $match: {
-//       ...matchStage,
-//       bookingStatus: 0,
-//       fromCity: { $regex: new RegExp(`^${fromCity}$`, "i") }
-//     }
-//   },
-//   {
-//     $addFields: {
-//       toTalPackages: {
-//         $cond: {
-//           if: { $isArray: "$packages" },
-//           then: { $size: "$packages" },
-//           else: 0,
-//         },
-//       }
-//     }
-//   },
-//   {
-//     $group: {
-//       _id: {
-//         fromCity: "$fromCity",
-//         toCity: "$toCity",
-//         pickupBranch: "$pickUpBranch",
-//         dropBranch: "$dropBranch"
-//       },
-//       noOfParcels: { $sum: "$totalPackages" },
-//       paidAmount: { $sum: "$grandTotal" }, // or "$paidAmount" if present
-//       toPayAmount: { $sum: "$toPayDeliveredAmount" },
-//       clrAmount: { $sum: "$clrAmount" },
-//       totalBookings: { $sum: 1 },
-//       totalCancelAmount: { $sum: "$cancelAmount" },
-//       grandTotal: { $sum: "$grandTotal" },
-//       totalCharge: { $sum: "$totalCharge" },
-//       doorPickupCharges: { $sum: "$doorPickupCharges" },
-//       otherCharges: { $sum: "$otherCharges" },
-//       refundAmount: { $sum: "$refundAmount" }
-//     }
-//   },
-//   {
-//     $addFields: {
-//       cities: {
-//         $concat: ["$_id.fromCity", "-", "$_id.toCity"]
-//       }
-//     }
-//   },
-//   {
-//     $project: {
-//       _id: 0,
-//       cities: 1,
-//       noOfParcels: 1,
-//       paidAmount: 1,
-//       toPayAmount: 1,
-//       clrAmount: 1,
-//       totalBookings: 1,
-//       totalCancelAmount: 1,
-//       grandTotal: 1,
-//       totalCharge: 1,
-//       doorPickupCharges: 1,
-//       otherCharges: 1,
-//       refundAmount: 1,
-//       totals: {
-//         totalGrandTotal: "$grandTotal",
-//         totalCharges: "$totalCharge",
-//         totalDoorPickupCharges: "$doorPickupCharges",
-//         totalOtherCharges: "$otherCharges"
-//       }
-//     }
-//   }
-// ]);
-
-
-
-//     const cityWiseDeliveryDetails = await Booking.aggregate([
-//       {
-//         $match: {
-//           ...matchStage,
-//           bookingStatus: 4,
-//           fromCity: fromCity,
-//         },
-//       },
-//       {
-//         $project: {
-//           grnNo: 1,
-//           bookingDate: 1,
-//           bookedBy: 1,
-//           fromCity: 1,
-//           toCity: 1,
-//           senderName: 1,
-//           receiverName: 1,
-//           toTalPackages: { $size: { $ifNull: ["$packages", []] } },
-//           totalCharge: 1,
-//           doorPickupCharges: 1,
-//           otherCharges: 1,
-//           grandTotal: 1,
-//         },
-//       },
-//       {
-//         $group: {
-//           _id: {
-//             fromCity: "$fromCity",
-//             toCity: "$toCity",
-//             bookingType: "$bookingType",
-//           },
-//           bookings: { $push: "$$ROOT" },
-//           finaltotalCharge: { $sum: "$totalCharge" },
-//           finaldoorPickupCharges: { $sum: "$doorPickupCharges" },
-//           finalotherCharges: { $sum: "$otherCharges" },
-//           finalgrandTotal: { $sum: "$grandTotal" },
-//           finaltoTalPackages: { $sum: "$toTalPackages" },
-//         },
-//       },
-//     ]);
-
-//     const categoryWiseBookingDetailsRaw = await Booking.aggregate([
-//       {
-//         $match: {
-//           ...matchStage,
-//           bookingType: { $in: ["paid", "toPay", "credit"] },
-//         },
-//       },
-//       {
-//         $group: {
-//           _id: "$bookingType",
-//           noOfPackages: { $sum: { $size: { $ifNull: ["$packages", []] } } },
-//           serviceCharges: { $sum: "$serviceCharges" },
-//           doorPickupCharges: { $sum: "$doorPickupCharges" },
-//           hamaliCharges: { $sum: "$hamaliCharges" },
-//           doorDeliveryCharges: { $sum: "$doorDeliveryCharges" },
-//           otherCharges: { $sum: "$otherCharges" },
-//           grandTotal: { $sum: "$grandTotal" },
-//           totalAmount: { $sum: "$totalCharge" },
-//         },
-//       },
-//     ]);
-
-//     const categoryWiseBookingDetails = {};
-//     let finalTotal = {
-//       noOfPackages: 0,
-//       serviceCharges: 0,
-//       doorPickupCharges: 0,
-//       hamaliCharges: 0,
-//       doorDeliveryCharges: 0,
-//       otherCharges: 0,
-//       grandTotal: 0,
-//       totalAmount: 0,
-//       toPayDeliveredAmount: 0
-//     };
-
-//     categoryWiseBookingDetailsRaw.forEach((item) => {
-//       const bookingType = item._id;
-//       delete item._id;
-//       categoryWiseBookingDetails[bookingType] = item;
-
-//       finalTotal.noOfPackages += item.noOfPackages;
-//       finalTotal.serviceCharges += item.serviceCharges;
-//       finalTotal.doorPickupCharges += item.doorPickupCharges;
-//       finalTotal.hamaliCharges += item.hamaliCharges;
-//       finalTotal.doorDeliveryCharges += item.doorDeliveryCharges;
-//       finalTotal.otherCharges += item.otherCharges;
-//       finalTotal.grandTotal += item.grandTotal;
-//       finalTotal.totalAmount += item.totalAmount;
-//     });
-
-//     // ✅ NEW LOGIC: toPayDelivery from latest delivery record
-//     const latestToPayDelivery = await Delivery.findOne(deliveryMatch)
-//       .sort({ deliveryDate: -1 })
-//       .select("grnNo toPayDeliveredAmount hamaliCharges deliveryDate")
-//       .lean();
-
-//     if (latestToPayDelivery) {
-//       const relatedBooking = await Booking.findOne({
-//         grnNo: latestToPayDelivery.grnNo,
-//         bookingType: "toPay",
-//         companyId: companyObjectId,
-//       })
-//         .select(
-//           "packages serviceCharges doorPickupCharges doorDeliveryCharges otherCharges grandTotal totalCharge"
-//         )
-//         .lean();
-
-//       if (relatedBooking) {
-//         const noOfPackages = relatedBooking.packages?.length || 0;
-
-//         categoryWiseBookingDetails["toPayDelivery"] = {
-//           noOfPackages,
-//           serviceCharges: relatedBooking.serviceCharges || 0,
-//           doorPickupCharges: relatedBooking.doorPickupCharges || 0,
-//           hamaliCharges: latestToPayDelivery.hamaliCharges || 0,
-//           doorDeliveryCharges: relatedBooking.doorDeliveryCharges || 0,
-//           otherCharges: relatedBooking.otherCharges || 0,
-//           grandTotal: relatedBooking.grandTotal || 0,
-//           totalAmount: relatedBooking.totalCharge || 0,
-//           toPayDeliveredAmount: latestToPayDelivery.toPayDeliveredAmount || 0,
-//         };
-
-//         // Add to finalTotal
-//         finalTotal.noOfPackages += noOfPackages;
-//         finalTotal.serviceCharges += relatedBooking.serviceCharges || 0;
-//         finalTotal.doorPickupCharges += relatedBooking.doorPickupCharges || 0;
-//         finalTotal.hamaliCharges += latestToPayDelivery.hamaliCharges || 0;
-//         finalTotal.doorDeliveryCharges += relatedBooking.doorDeliveryCharges || 0;
-//         finalTotal.otherCharges += relatedBooking.otherCharges || 0;
-//         finalTotal.grandTotal += relatedBooking.grandTotal || 0;
-//         finalTotal.totalAmount += relatedBooking.totalCharge || 0;
-//         finalTotal.toPayDeliveredAmount += latestToPayDelivery.toPayDeliveredAmount || 0;
-//       }
-//     }
-
-//     res.status(200).json({
-//       paidDetails: {
-//         data: paidData,
-//         finalTotalPaidPackages: paidData.reduce((sum, d) => sum + d.toTalPackages, 0),
-//         finalTotalPaidCharge: paidData.reduce((sum, d) => sum + d.totalCharge, 0),
-//         finalDoorPaidPickupCharges: paidData.reduce((sum, d) => sum + d.doorPickupCharges, 0),
-//         finalOtherCharges: paidData.reduce((sum, d) => sum + d.otherCharges, 0),
-//         finalGrandTotal: paidData.reduce((sum, d) => sum + d.grandTotal, 0),
-//       },
-//       toPayDetails: {
-//         data: toPayData,
-//         finalTotalToPayPackages: toPayData.reduce((sum, d) => sum + d.toTalPackages, 0),
-//         finalTotalToPayCharge: toPayData.reduce((sum, d) => sum + d.totalCharge, 0),
-//         finalTotalToPayDoorPickupCharges: toPayData.reduce((sum, d) => sum + d.doorPickupCharges, 0),
-//         finalTotalToPayOtherCharges: toPayData.reduce((sum, d) => sum + d.otherCharges, 0),
-//         finalTotalToPayGrandTotal: toPayData.reduce((sum, d) => sum + d.grandTotal, 0),
-//       },
-//       deliveredToPayDetails: {
-//         data: deliveredToPayData,
-//         finalTotalPackages: deliveredToPayData.reduce((sum, d) => sum + (d.totalPackages || 0), 0),
-//         finalHamaliCharges: deliveredToPayData.reduce((sum, d) => sum + (d.hamaliCharges || 0), 0),
-//         finalTotalAmount: deliveredToPayData.reduce((sum, d) => sum + (d.totalAmount || 0), 0),
-//         finalDoorDeliveryCharges: deliveredToPayData.reduce((sum, d) => sum + (d.doorDeliveryCharges || 0), 0),
-//         finalOtherCharges: deliveredToPayData.reduce((sum, d) => sum + (d.otherCharges || 0), 0),
-//         finalGrandTotal: deliveredToPayData.reduce((sum, d) => sum + (d.grandTotal || 0), 0),
-//       },
-//       cityWiseBookingDetails,
-//       cityWiseDeliveryDetails,
-//       categoryWiseBookingDetails,
-//       totals: finalTotal,
-//     });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// };
-
-
 
 const parcelBranchWiseGSTReport = async (req, res) => {
   try {
@@ -4510,6 +4122,8 @@ const parcelBranchWiseGSTReport = async (req, res) => {
 
 
 
+
+
 const consolidatedReportBranch = async (req, res) => {
   try {
     const {
@@ -4546,55 +4160,78 @@ const consolidatedReportBranch = async (req, res) => {
     if (toCity) matchStageBase.toCity = toCity;
 
     // 1️⃣ Category-wise Bookings
-    const categoryWiseMatchStage = {
-      ...matchStageBase,
-      bookingType: { $in: ["paid", "toPay", "credit"] },
-    };
 
-    const categoryWiseBookingDetailsRaw = await Booking.aggregate([
-      { $match: categoryWiseMatchStage },
-      {
-        $group: {
-          _id: "$bookingType",
-          noOfPackages: { $sum: { $size: { $ifNull: ["$packages", []] } } },
-          serviceCharges: { $sum: "$serviceCharges" },
-          doorPickupCharges: { $sum: "$doorPickupCharges" },
-          hamaliCharges: { $sum: "$hamaliCharges" },
-          doorDeliveryCharges: { $sum: "$doorDeliveryCharges" },
-          otherCharges: { $sum: "$otherCharges" },
-          grandTotal: { $sum: "$grandTotal" },
-          totalAmount: { $sum: "$totalCharge" },
-        },
-      },
-    ]);
+      const fetchAndFormat = async (type) => {
+    const details = await Booking.find({ ...matchStageBase, bookingType: type })
+      .select("grnNo bookingDate bookedBy toCity senderName receiverName packages totalCharge serviceCharges doorPickupCharges otherCharges grandTotal")
+      .populate("bookedBy", "name email phone")
+      .lean();
 
-    const categoryWiseBookingDetails = {};
-    let finalTotal = {
-      noOfPackages: 0,
-      serviceCharges: 0,
-      doorPickupCharges: 0,
-      hamaliCharges: 0,
-      doorDeliveryCharges: 0,
-      otherCharges: 0,
-      grandTotal: 0,
-      totalAmount: 0,
-    };
+    const data = details.map(item => ({
+      grnNo: item.grnNo,
+      bookingDate: item.bookingDate,
+      bookedBy: item.bookedBy?.name || "N/A",
+      toCity: item.toCity,
+      senderName: item.senderName,
+      receiverName: item.receiverName,
+      toTalPackages: item.packages?.length || 0,
+      totalCharge: item.totalCharge || 0,
+      doorPickupCharges: item.doorPickupCharges || 0,
+      otherCharges: item.otherCharges || 0,
+      grandTotal: item.grandTotal || 0
+    }));
 
-    categoryWiseBookingDetailsRaw.forEach((item) => {
-      const bookingType = item._id;
-      delete item._id;
-      categoryWiseBookingDetails[bookingType] = item;
+    const totalParcels = data.reduce((sum, item) => sum + item.toTalPackages, 0);
+    const totalgrandTotal = data.reduce((sum, item) => sum + item.grandTotal, 0);
+    const toTalPackages=data.reduce((sum, item) => sum + item.toTalPackages, 0);
+    const totalCharge = data.reduce((sum, item) => sum + item.totalCharge, 0);
+     const doorPickupCharges = data.reduce((sum, item) => sum + item.doorPickupCharges, 0);
+    const otherCharges = data.reduce((sum, item) => sum + item.otherCharges, 0);
 
-      // Summing for totals
-      finalTotal.noOfPackages += item.noOfPackages;
-      finalTotal.serviceCharges += item.serviceCharges;
-      finalTotal.doorPickupCharges += item.doorPickupCharges;
-      finalTotal.hamaliCharges += item.hamaliCharges;
-      finalTotal.doorDeliveryCharges += item.doorDeliveryCharges;
-      finalTotal.otherCharges += item.otherCharges;
-      finalTotal.grandTotal += item.grandTotal;
-      finalTotal.totalAmount += item.totalAmount;
-    });
+    return { data, totalParcels, totalgrandTotal,toTalPackages,totalCharge,doorPickupCharges,otherCharges };
+  };
+
+  // Fetch all 3 booking types in parallel
+  const [paidResult, toPayResult, creditResult] = await Promise.all([
+    fetchAndFormat("paid"),
+    fetchAndFormat("toPay"),
+    fetchAndFormat("credit")
+  ]);
+
+  const totals = {
+    paid: {
+     totalParcels: paidResult.totalParcels,
+     totalgrandTotal:paidResult.totalgrandTotal,
+     toTalPackages:paidResult.toTalPackages,
+     totalCharge:paidResult.totalCharge,
+     doorPickupCharges:paidResult.doorPickupCharges,
+     otherCharges:paidResult.otherCharges
+
+    },
+    toPay: {
+     totalParcels: toPayResult.totalParcels,
+     totalgrandTotal:toPayResult.totalgrandTotal,
+     toTalPackages:toPayResult.toTalPackages,
+     totalCharge:toPayResult.totalCharge,
+     doorPickupCharges:toPayResult.doorPickupCharges,
+     otherCharges:toPayResult.otherCharges
+    },
+    credit: {
+      totalParcels: creditResult.totalParcels,
+     totalgrandTotal:creditResult.totalgrandTotal,
+     toTalPackages:creditResult.toTalPackages,
+     totalCharge:creditResult.totalCharge,
+     doorPickupCharges:creditResult.doorPickupCharges,
+     otherCharges:creditResult.otherCharges
+    }
+  };
+
+
+
+
+
+
+
 
     // 2️⃣ City-wise Bookings
     const cityWiseMatchStage = {
@@ -4658,11 +4295,266 @@ const consolidatedReportBranch = async (req, res) => {
       { $sort: { cities: 1 } }
     ]);
 
-    // ✅ Final Response (Split cleanly)
+    // 3️⃣ City-wise Total Calculation
+    const cityWiseTotal = {
+      noOfParcels: 0,
+      PaidAmount: 0,
+      ToPayAmount: 0,
+      FOCAmount: 0,
+      refundAmount: 0,
+      grandTotal: 0,
+      netAmount: 0,
+      totalBookingsAmount: 0,
+      totalNetAmount: 0,
+    };
+
+    cityWiseRaw.forEach((entry) => {
+      cityWiseTotal.noOfParcels += entry.noOfParcels || 0;
+      cityWiseTotal.PaidAmount += entry.PaidAmount || 0;
+      cityWiseTotal.ToPayAmount += entry.ToPayAmount || 0;
+      cityWiseTotal.FOCAmount += entry.FOCAmount || 0;
+      cityWiseTotal.refundAmount += entry.refundAmount || 0;
+    });
+
+    cityWiseTotal.grandTotal = cityWiseTotal.PaidAmount + cityWiseTotal.ToPayAmount + cityWiseTotal.FOCAmount;
+    cityWiseTotal.totalBookingsAmount = cityWiseTotal.grandTotal;
+    cityWiseTotal.totalNetAmount = cityWiseTotal.grandTotal - cityWiseTotal.refundAmount;
+    cityWiseTotal.netAmount = cityWiseTotal.totalNetAmount;
+
+    // 4️⃣ Deliver ToPay Details
+    const deliverMatchStage = {
+      companyId: companyObjectId,
+      bookingType:"toPay"
+    };
+
+    if (fromDate && toDate) {
+      const from = new Date(fromDate);
+      from.setHours(0, 0, 0, 0);
+      const toD = new Date(toDate);
+      toD.setHours(23, 59, 59, 999);
+      deliverMatchStage.deliveryDate = { $gte: from, $lte: toD };
+    }
+
+    if (fromCity) deliverMatchStage.deliveryCity = fromCity;
+    if (pickUpBranch) deliverMatchStage.deliveryBranch = pickUpBranch;
+
+  const deliverToPayDetails = await Delivery.aggregate([
+      { $match: deliverMatchStage },
+      {
+        $lookup: {
+          from: "bookings",
+          localField: "bookingId",
+          foreignField: "_id",
+          as: "booking"
+        }
+      },
+      { $unwind: "$booking" },
+      {
+        $project: {
+          _id: 0,
+          grnNo: 1,
+          deliveryDate: 1,
+          lrNumber: "$booking.lrNumber",
+          deliveryEmployee:"$deliveryEmployee",
+          toCity: "$booking.toCity",
+          senderName: "$booking.senderName",
+          receiverName: "$booking.receiverName",
+          totalPackages: "$booking.totalPackages",
+          totalCharge: "$booking.totalCharge",
+          hamaliCharges: "$booking.hamaliCharges",
+          otherCharges: "$booking.otherCharges",
+          grandTotal: "$booking.grandTotal"
+        }
+      },
+      { $sort: { deliveryDate: -1 } }
+    ]);
+
+  const deliverToPayTotals = deliverToPayDetails.reduce(
+  (totals, curr) => {
+    totals.totalPackages += curr.totalPackages || 0;
+    totals.totalCharge += curr.totalCharge || 0;
+    totals.hamaliCharges += curr.hamaliCharges || 0;
+    totals.grandTotal += curr.grandTotal || 0;
+    return totals;
+  },
+  {
+    totalPackages: 0,
+    totalCharge: 0,
+    hamaliCharges: 0,
+    grandTotal: 0,
+  }
+);
+
+
+
+const cityWiseDeliveryDetails = await Booking.aggregate([
+  {
+    $match: {
+      bookingStatus: 4,
+      deliveryDate: {
+        $ne: null,
+        ...(fromDate && toDate && {
+          $gte: new Date(fromDate),
+          $lte: new Date(toDate),
+        }),
+      },
+      ...(fromCity && {
+        fromCity: { $regex: new RegExp(fromCity, "i") },
+      }),
+      ...(pickUpBranch && {
+        pickUpBranch: { $regex: new RegExp(pickUpBranch, "i") },
+      }),
+      companyId: new mongoose.Types.ObjectId(companyId),
+    },
+  },
+  {
+    $group: {
+      _id: {
+        fromCity: "$fromCity",
+        toCity: "$toCity",
+      },
+      noOfParcels: { $sum: "$totalPackages" },
+      PaidAmount: {
+        $sum: {
+          $cond: [{ $eq: ["$bookingType", "paid"] }, "$totalCharge", 0],
+        },
+      },
+      ToPayAmount: {
+        $sum: {
+          $cond: [{ $eq: ["$bookingType", "toPay"] }, "$totalCharge", 0],
+        },
+      },
+      creditAmount: {
+        $sum: {
+          $cond: [{ $eq: ["$bookingType", "credit"] }, "$totalCharge", 0],
+        },
+      },
+      FOCAmount: {
+        $sum: {
+          $cond: [{ $eq: ["$bookingType", "FOC"] }, "$totalCharge", 0],
+        },
+      },
+      refundAmount: { $sum: "$refundAmount" },
+      grandTotal: { $sum: "$grandTotal" },
+    },
+  },
+  {
+    $project: {
+      _id: 0,
+      cities: {
+        $concat: ["$_id.fromCity", " - ", "$_id.toCity"],
+      },
+      noOfParcels: 1,
+      PaidAmount: 1,
+      ToPayAmount: 1,
+      FOCAmount: 1,
+      refundAmount: 1,
+      grandTotal: 1,
+      netAmount: {
+        $add: ["$PaidAmount", "$ToPayAmount", "$creditAmount"],
+      },
+    },
+  },
+]);
+
+// Citywise Total 
+
+const deliveryTotals = cityWiseDeliveryDetails.reduce(
+  (acc, item) => {
+    acc.totalParcels += item.noOfParcels || 0;
+    acc.totalPaidAmount += item.PaidAmount || 0;
+    acc.totalToPayAmount += item.ToPayAmount || 0;
+    acc.totalFOCAmount += item.FOCAmount || 0;
+    acc.totalRefundAmount += item.refundAmount || 0;
+    acc.totalGrandTotal += item.grandTotal || 0;
+    acc.totalNetAmount += item.netAmount || 0;
+    return acc;
+  },
+  {
+    totalParcels: 0,
+    totalPaidAmount: 0,
+    totalToPayAmount: 0,
+    totalFOCAmount: 0,
+    totalRefundAmount: 0,
+    totalGrandTotal: 0,
+    totalNetAmount: 0,
+  }
+);
+
+
+
+// Category-wise booking aggregation
+const BookingTypeBookings = await Booking.aggregate([
+  {
+    $match: {
+      ...matchStageBase,
+      bookingType: { $in: ["paid", "toPay", "credit"] },
+    },
+  },
+  {
+    $group: {
+      _id: "$bookingType",
+      noOfPackages: { $sum: { $size: { $ifNull: ["$packages", []] } } },
+      serviceCharges: { $sum: "$serviceCharges" },
+      doorPickupCharges: { $sum: "$doorPickupCharges" },
+      hamaliCharges: { $sum: "$hamaliCharges" },
+      doorDeliveryCharges: { $sum: "$doorDeliveryCharges" },
+      otherCharges: { $sum: "$otherCharges" },
+      grandTotal: { $sum: "$grandTotal" },
+      totalAmount: { $sum: "$totalCharge" },
+    },
+  },
+]);
+
+// Initialize results container
+const CategoryWiseBookingDetails = {};
+const CategoryWiseBookingTotals = {
+  noOfPackages: 0,
+  serviceCharges: 0,
+  doorPickupCharges: 0,
+  hamaliCharges: 0,
+  doorDeliveryCharges: 0,
+  otherCharges: 0,
+  grandTotal: 0,
+  totalAmount: 0,
+  toPayDeliveredAmount: 0, // Optional: remove if not used anymore
+};
+
+// Format data and accumulate totals
+BookingTypeBookings.forEach((item) => {
+  const bookingType = item._id;
+  delete item._id;
+  CategoryWiseBookingDetails[bookingType] = item;
+
+  CategoryWiseBookingTotals.noOfPackages += item.noOfPackages;
+  CategoryWiseBookingTotals.serviceCharges += item.serviceCharges;
+  CategoryWiseBookingTotals.doorPickupCharges += item.doorPickupCharges;
+  CategoryWiseBookingTotals.hamaliCharges += item.hamaliCharges;
+  CategoryWiseBookingTotals.doorDeliveryCharges += item.doorDeliveryCharges;
+  CategoryWiseBookingTotals.otherCharges += item.otherCharges;
+  CategoryWiseBookingTotals.grandTotal += item.grandTotal;
+  CategoryWiseBookingTotals.totalAmount += item.totalAmount;
+});
+
+
+
+
+    //  Final Response
     res.status(200).json({
-      categoryWiseBookingDetails,
-      totals: finalTotal,
-      cityWiseBookingDetails: cityWiseRaw
+    BookingTypes: {
+      paid: paidResult.data,
+      toPay: toPayResult.data,
+      credit: creditResult.data
+    },
+    totals,
+      cityWiseBookingDetails: cityWiseRaw,
+      cityWiseTotal,
+      deliverToPayDetails,
+       deliverToPayTotals,
+       cityWiseDeliveryDetails,
+     cityWiseDeliveryTotals: deliveryTotals,
+    CategoryWiseBookingDetails,
+     CategoryWiseBookingTotals,
     });
 
   } catch (error) {
@@ -4670,10 +4562,6 @@ const consolidatedReportBranch = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
-
-
-
 
 
 const senderReceiverGSTReport = async (req, res) => {
