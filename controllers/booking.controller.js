@@ -4425,6 +4425,64 @@ BookingTypeBookings.forEach((item) => {
 
 
 
+//delivery 
+
+const deliveryMatch = {
+  deliveryDate: { $ne: null },
+  companyId: companyObjectId,
+};
+
+// Apply filters
+if (fromDate && toDate) {
+  const from = new Date(fromDate);
+  from.setHours(0, 0, 0, 0);
+  const to = new Date(toDate);
+  to.setHours(23, 59, 59, 999);
+  deliveryMatch.deliveryDate = { $gte: from, $lte: to };
+}
+
+if (fromCity) {
+  deliveryMatch.toCity = new RegExp(`^${fromCity}$`, "i");
+}
+if (pickUpBranch) {
+  deliveryMatch.deliveryBranch = new RegExp(`^${pickUpBranch}$`, "i");
+}
+
+
+const deliveryTotal = await Booking.aggregate([
+  { $match: deliveryMatch },
+  {
+    $group: {
+      _id: null,
+      noOfPackages: { $sum: "$noOfPackages" },
+      serviceCharges: { $sum: "$serviceCharges" },
+      doorPickupCharges: { $sum: "$doorPickupCharges" },
+      hamaliCharges: { $sum: "$hamaliCharges" },
+      doorDeliveryCharges: { $sum: "$doorDeliveryCharges" },
+      otherCharges: { $sum: "$otherCharges" },
+      grandTotal: { $sum: "$grandTotal" },
+      totalAmount: { $sum: "$totalAmount" },
+      toPayDeliveredAmount: { $sum: "$toPayDeliveredAmount" },
+    },
+  },
+  {
+    $project: {
+      _id: 0,
+      noOfPackages: 1,
+      serviceCharges: 1,
+      doorPickupCharges: 1,
+      hamaliCharges: 1,
+      doorDeliveryCharges: 1,
+      otherCharges: 1,
+      grandTotal: 1,
+      totalAmount: 1,
+      toPayDeliveredAmount: 1,
+    },
+  },
+]);
+
+
+
 
     //  Final Response
     res.status(200).json({
@@ -4442,6 +4500,7 @@ BookingTypeBookings.forEach((item) => {
      cityWiseDeliveryTotals: deliveryTotals,
     CategoryWiseBookingDetails,
      CategoryWiseBookingTotals,
+      deliverySummaryTotals: deliveryTotal[0] || {},
     });
 
   } catch (error) {
