@@ -3596,109 +3596,6 @@ const parcelBranchConsolidatedReport = async (req, res) => {
   }
 };
 
-// const parcelBranchConsolidatedReport = async (req, res) => {
-//   try {
-//     const { fromDate, toDate, fromCity, pickUpBranch } = req.body;
-//     const companyId = req.user?.companyId;
-
-//     if (!companyId) {
-//       return res.status(401).json({ message: "Unauthorized: companyId missing" });
-//     }
-
-//     if (!fromDate || !toDate) {
-//       return res.status(400).json({ message: "fromDate and toDate are required" });
-//     }
-
-//     const from = new Date(fromDate + 'T00:00:00+05:30');
-//     const to = new Date(toDate + 'T23:59:59+05:30');
-
-//     const matchStage = {
-//       companyId: new mongoose.Types.ObjectId(companyId),
-//       bookingDate: { $gte: from, $lte: to }
-//     };
-
-//     if (pickUpBranch) matchStage.pickUpBranch = pickUpBranch;
-//     if (fromCity) matchStage.fromCity = new RegExp(`^${fromCity}$`, 'i');
-
-//     const bookingData = await Booking.aggregate([
-//       { $match: matchStage },
-//       {
-//         $group: {
-//           _id: {
-//             branchCode: "$pickUpBranch",
-//             branchName: "$pickUpBranchname",
-//             bookingType: "$bookingType",
-//             bookingStatus: "$bookingStatus"
-//           },
-//           grandTotal: { $sum: "$grandTotal" }
-//         }
-//       }
-//     ]);
-
-//     const branchMap = {};
-//     const totals = {
-//       finalPaidAmount: 0,
-//       finalToPayAmount: 0,
-//       finalCreditAmount: 0,
-//       finalCancelAmount: 0,
-//       finalBookingTotal: 0,
-//       finalTotal: 0
-//     };
-
-//     for (const record of bookingData) {
-//       const { branchCode, branchName, bookingType, bookingStatus } = record._id;
-
-//       if (!branchMap[branchCode]) {
-//         branchMap[branchCode] = {
-//           branchCode,
-//           branchName,
-//           paidAmount: 0,
-//           toPayAmount: 0,
-//           creditAmount: 0,
-//           cancelAmount: 0,
-//           bookingTotal: 0,
-//           total: 0
-//         };
-//       }
-
-//       const entry = branchMap[branchCode];
-
-//       if (bookingType === "paid") {
-//         entry.paidAmount += record.grandTotal;
-//         totals.finalPaidAmount += record.grandTotal;
-//       }
-//       if (bookingType === "toPay") {
-//         entry.toPayAmount += record.grandTotal;
-//         totals.finalToPayAmount += record.grandTotal;
-//       }
-//       if (bookingType === "credit") {
-//         entry.creditAmount += record.grandTotal;
-//         totals.finalCreditAmount += record.grandTotal;
-//       }
-//       if (bookingStatus === 5) {
-//         entry.cancelAmount += record.grandTotal;
-//         totals.finalCancelAmount += record.grandTotal;
-//       }
-//     }
-
-//     // Calculate bookingTotal and total
-//     for (const entry of Object.values(branchMap)) {
-//       entry.bookingTotal = entry.paidAmount + entry.toPayAmount + entry.creditAmount;
-//       entry.total = entry.paidAmount;
-//       totals.finalBookingTotal += entry.bookingTotal;
-//       totals.finalTotal += entry.total;
-//     }
-
-//     return res.status(200).json({
-//       data: Object.values(branchMap),
-//       ...totals
-//     });
-
-//   } catch (err) {
-//     console.error("Error in parcelBranchConsolidatedReport:", err);
-//     return res.status(500).json({ message: "Server Error", error: err.message });
-//   }
-// };
 
 const deliveryReport = async (req, res) => {
   try {
@@ -3764,6 +3661,7 @@ const deliveryReport = async (req, res) => {
   }
 };
 //  CORRECT WORKING BUT MISSING
+
 // const consolidatedReportBranch = async (req, res) => {
 //   try {
 //     const { fromDate, toDate, fromCity, pickUpBranch, deliveryCity, deliveryBranch } = req.body;
@@ -4118,12 +4016,6 @@ const parcelBranchWiseGSTReport = async (req, res) => {
   }
 };
 
-
-
-
-
-
-
 const consolidatedReportBranch = async (req, res) => {
   try {
     const {
@@ -4163,12 +4055,13 @@ const consolidatedReportBranch = async (req, res) => {
 
       const fetchAndFormat = async (type) => {
     const details = await Booking.find({ ...matchStageBase, bookingType: type })
-      .select("grnNo bookingDate bookedBy toCity senderName receiverName packages totalCharge serviceCharges doorPickupCharges otherCharges grandTotal")
+      .select("grnNo lrNumber bookingDate bookedBy toCity senderName receiverName packages totalCharge serviceCharges doorPickupCharges otherCharges grandTotal")
       .populate("bookedBy", "name email phone")
       .lean();
 
     const data = details.map(item => ({
       grnNo: item.grnNo,
+      lrNumber:item.lrNumber,
       bookingDate: item.bookingDate,
       bookedBy: item.bookedBy?.name || "N/A",
       toCity: item.toCity,
@@ -4225,12 +4118,6 @@ const consolidatedReportBranch = async (req, res) => {
      otherCharges:creditResult.otherCharges
     }
   };
-
-
-
-
-
-
 
 
     // 2️⃣ City-wise Bookings
