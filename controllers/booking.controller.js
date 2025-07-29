@@ -4483,6 +4483,37 @@ const deliveryTotal = await Booking.aggregate([
 
 
 
+const toPayDelivery = deliveryTotal[0] || {
+  noOfPackages: 0,
+  serviceCharges: 0,
+  doorPickupCharges: 0,
+  hamaliCharges: 0,
+  doorDeliveryCharges: 0,
+  otherCharges: 0,
+  grandTotal: 0,
+  totalAmount: 0,
+  toPayDeliveredAmount: 0
+};
+
+// Merge toPayDelivery into CategoryWiseBookingTotals
+const fieldsToAdd = [
+  'noOfPackages',
+  'serviceCharges',
+  'doorPickupCharges',
+  'hamaliCharges',
+  'doorDeliveryCharges',
+  'otherCharges',
+  'grandTotal',
+  'totalAmount',
+  'toPayDeliveredAmount'
+];
+
+for (const field of fieldsToAdd) {
+  CategoryWiseBookingTotals[field] =
+    (CategoryWiseBookingTotals[field] || 0) + (toPayDelivery[field] || 0);
+}
+
+
 
     //  Final Response
     res.status(200).json({
@@ -4500,7 +4531,8 @@ const deliveryTotal = await Booking.aggregate([
      cityWiseDeliveryTotals: deliveryTotals,
     CategoryWiseBookingDetails,
      CategoryWiseBookingTotals,
-      deliverySummaryTotals: deliveryTotal[0] || {},
+      toPayDelivery
+      
     });
 
   } catch (error) {
