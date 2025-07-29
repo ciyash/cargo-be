@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 4000;
 const app = express();
 
 const corsOption={
-   origin:["http://localhost:4200","https://srikaleswari.com/cloud"],
+   origin:["http://localhost:4200","https://srikaleswari.com"],
    credentials:true
 }
 
