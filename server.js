@@ -15,19 +15,20 @@ const app = express();
 
 // app.use(helmet())
 
-const corsOption={
-   origin:["http://localhost:4200",
-    "https://nextlogisticss.com/cloud",
-    "https://nextlogisticss.com",
-    "http://localhost:3000"
-  ],
-   credentials:true
-}
+// const corsOption={
+//    origin:["http://localhost:4200",
+//        "https://nextlogisticss.com/cloud",
+//     "https://nextlogisticss.com",
+//     "http://localhost:3000"
+//   ],
+//    credentials:true
+// }
 
 app.use(express.json({ limit: "40mb" }));
 app.use(express.urlencoded({extended:true}))
 
-app.use(cors(corsOption));
+// app.use(cors(corsOption));
+app.use(cors());
  
 app.use("/", router);
 
