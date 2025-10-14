@@ -19,7 +19,7 @@ const corsOption={
    origin:["http://localhost:4200",
     "https://nextlogisticss.com/cloud",
     "https://nextlogisticss.com",
-    "http://localhost:3000/"
+    "http://localhost:3000"
   ],
    credentials:true
 }
