@@ -5,7 +5,6 @@ const router = express.Router();
 
 router.post('/create', itemController.createItem);
 
-
 router.get('/get', itemController.getItems);
 
 router.get('/items/:id', itemController.getItemById);

@@ -6480,6 +6480,5 @@ export default {
   branchAccount,
   acPartyAccount,
   statusWiseSummary,
-
   getTotalByBranchAndDate,
 };
