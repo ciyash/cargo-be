@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import router from "./routes/index.js";
 import cors from "cors";
-import helmet from "helmet";
+// import helmet from "helmet";
 // import cron from "node-cron";
 // import branchReportController from "./controllers/branch.report.controller.js";
 
@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 4000;
 
 const app = express();
 
-app.use(helmet())
+// app.use(helmet())
 
 const corsOption={
    origin:["http://localhost:4200","https://nextlogisticss.com"],
