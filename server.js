@@ -15,24 +15,25 @@ const app = express();
 
 // app.use(helmet())
 
-// const corsOption={
-//    origin:["http://localhost:4200",
-//        "https://nextlogisticss.com/cloud",
-//     "https://nextlogisticss.com",
-//     "http://localhost:3000"
-//   ],
-//    credentials:true
-// }
+const corsOption = {
+  origin: [
+    "http://localhost:4200",
+    "https://nextlogisticss.com/cloud",
+    "https://nextlogisticss.com",
+    "http://localhost:3000",
+  ],
+  credentials: true,
+};
 
 app.use(express.json({ limit: "40mb" }));
-app.use(express.urlencoded({extended:true}))
+app.use(express.urlencoded({ extended: true }));
 
-// app.use(cors(corsOption));
-app.use(cors());
- 
+app.use(cors(corsOption));
+
 app.use("/", router);
 
-mongoose.connect(process.env.MONGO_URI)
+mongoose
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("mongodb connected successfully"))
   .catch((error) => console.log("mongodb disconnected", error));
 
