@@ -2,7 +2,7 @@ import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import router from "./routes/index.js";
-// import cors from "cors";
+import cors from "cors";
 // import helmet from "helmet";
 // import cron from "node-cron";
 // import branchReportController from "./controllers/branch.report.controller.js";
