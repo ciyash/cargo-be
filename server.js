@@ -21,6 +21,7 @@ const corsOption = {
     "https://nextlogisticss.com/cloud",
     "https://nextlogisticss.com",
     "http://localhost:3000",
+    "https://nextlogisticss.com/"
   ],
   credentials: true,
 };
