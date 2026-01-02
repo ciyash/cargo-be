@@ -429,9 +429,6 @@ const deleteSubadmin = async (req, res) => {
 };
 
 
-
-
-
 const updateSubadmin = async (req, res) => {
   try {
     const { id } = req.params;
@@ -533,7 +530,6 @@ const updateAdmin = async (req, res) => {
 
 
 
- 
 const deletePersons = async (req, res) => {
   try {
     

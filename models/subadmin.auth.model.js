@@ -29,7 +29,7 @@ const adminSchema = new mongoose.Schema(
         "employee",
         "accountant",
         "superviser",
-        "driver",
+        "driver",  
       ],
       required: true,
     },

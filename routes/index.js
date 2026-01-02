@@ -13,6 +13,7 @@ import bankRouter from '../routes/bank.route.js'
 import itemRouter from '../routes/item.route.js'
 import vendorRouter from '../routes/vendor.route.js' // Assuming you have a vendor route
 import branchReportRouter from '../routes/branch.report.route.js' // Assuming you have a branch report route
+import shipRocketRouter from '../routes/shiprocket.route.js'
 
 //company routes  
 import masterRouter from './cf.master.router.js'
@@ -31,7 +32,10 @@ app.use("/vehicle",vehicleRouter)
 app.use("/parcel-loading",parcelLoadingRouter)
 app.use("/multi-router",multiRouter)
 app.use("/extra-charge",extraChargeRouter)
-app.use("/parcel-unloading",parcelUnloadingRouter)     
+app.use("/parcel-unloading",parcelUnloadingRouter)  
+app.use("/shiprocket",shipRocketRouter)
+
+//cfmaster routes   
 
 app.use("/cfmaster",masterRouter)
 app.use("/cfextra-charge",cfExtraChargeRouter)
