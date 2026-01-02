@@ -1,9 +1,10 @@
 import express from "express";
-import ShipRocketController from "../controllers/ShipRocket.controller.js";
+
+import shiprocketController from "../controllers/shiprocket.controller.js";
 
 
 const router = express.Router();
 
-router.post("/create-order", ShipRocketController.createOrder);
+router.post("/create-order", shiprocketController.createOrder);
 
 export default router;
