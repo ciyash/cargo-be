@@ -15,7 +15,7 @@ const shiprocketOrderSchema = new mongoose.Schema({
   subadminId: { type: mongoose.Schema.Types.ObjectId, ref: "Subadmin" },
   order_id: { type: String, required: true, unique: true },
 
-  billing_customer_name: String,
+  billing_customer_name: String, 
   billing_last_name: String,
   billing_address: String,
   billing_city: String,
@@ -47,3 +47,4 @@ const shiprocketOrderSchema = new mongoose.Schema({
 });
 
 export default mongoose.model("ShiprocketOrder", shiprocketOrderSchema);
+//
