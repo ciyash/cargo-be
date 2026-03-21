@@ -25,7 +25,7 @@ router.get("/user/credit",auth,bookingController.getCreditBookings)
 
 router.delete("/user/delete-phone/:phone",auth,bookingController.deleteUserByPhone)
 
-// bookings 
+// bookings   
  
 router.post("/",auth,bookingController.createBooking)
 

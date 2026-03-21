@@ -4342,7 +4342,7 @@ const cityWiseDeliveryDetails = await Booking.aggregate([
       },
     },
   },
-]);
+]);   
 
 // Citywise Total 
 
