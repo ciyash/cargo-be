@@ -6,7 +6,7 @@ import getShiprocketToken from "../config/shiprocket.service.js";
 
 const createOrder = async (req, res) => {
   try {
- 
+
     const subadminId = req.user?.id;
 
     // if (!subadminId) {
@@ -21,6 +21,7 @@ const createOrder = async (req, res) => {
     const response = await axios.post("https://apiv2.shiprocket.in/v1/external/orders/create/adhoc",
       req.body,
       {
+        timeout: 30000,
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json"

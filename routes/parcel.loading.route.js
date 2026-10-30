@@ -1,10 +1,11 @@
+import { prepareReportPagination } from "../utils/report-pagination.js";
 import express from 'express'
 import parcelController from '../controllers/pracel.loading.controller.js'
 import auth from '../config/auth.middleware.js'
 
 const router=express.Router()   
 
-router.post("/parcel-loding-load" ,auth,parcelController.getBookingsBetweenDates);
+router.post("/parcel-loding-load" ,auth,prepareReportPagination, parcelController.getBookingsBetweenDates);
 
 router.post("/",auth,parcelController.createParcel)
  
@@ -28,15 +29,15 @@ router.get("/grnNo/:grnNo",auth,parcelController.getParcelByGrnNo)
 
 router.get("/vehicalNumber/:vehicalNumber",auth,parcelController.getParcelByVehicalNumber)
 
-router.post("/offline-parcel-voucher-details",auth,parcelController.offlineParcelVoucherDetails)
+router.post("/offline-parcel-voucher-details",auth,prepareReportPagination, parcelController.offlineParcelVoucherDetails)
 
-router.post("/parcel-offline-report",auth,parcelController.parcelOfflineReport) // parcel offline report
+router.post("/parcel-offline-report",auth,prepareReportPagination, parcelController.parcelOfflineReport) // parcel offline report
 
-router.post("/parcel-status-report",auth,parcelController.parcelStatusReport)  //parcel status date difference report
+router.post("/parcel-status-report",auth,prepareReportPagination, parcelController.parcelStatusReport)  //parcel status date difference report
 
-router.post("/parcel-pending-report",auth, parcelController.parcelPendingReport)  // parcel pending delivery stockreport
+router.post("/parcel-pending-report",auth, prepareReportPagination, parcelController.parcelPendingReport)  // parcel pending delivery stockreport
 
-router.post("/branch-to-branch-load",auth,parcelController.getBookingsByDateAndBranch) //branch to branch loading
+router.post("/branch-to-branch-load",auth,prepareReportPagination, parcelController.getBookingsByDateAndBranch) //branch to branch loading
 
 router.post("/branch-to-branch-post",auth,parcelController.createBranchToBranch)  // branch to branch post
 
@@ -44,7 +45,7 @@ router.post("/branch-to-branch-post",auth,parcelController.createBranchToBranch)
 
 // reports
 
-router.post("/dispatched-stock-report",auth,parcelController.dispatchedStockReport)
+router.post("/dispatched-stock-report",auth,prepareReportPagination, parcelController.dispatchedStockReport)
 
 
 

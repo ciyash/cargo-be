@@ -1,2 +1,8 @@
-#node-modules/
-#.env
+node_modules/
+.env
+.env.*
+!.env.example
+coverage/
+*.log
+.frontend-build-check/
+.browser-compact-header/

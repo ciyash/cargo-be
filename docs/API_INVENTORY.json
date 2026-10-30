@@ -1,0 +1,1410 @@
+{
+  "generatedOn": "2026-10-30",
+  "note": "Declaration inventory, not a complete OpenAPI or permission audit",
+  "endpoints": [
+    {
+      "method": "GET",
+      "url": "/company/branding",
+      "boundary": "Company JWT",
+      "file": "routes/company.router.js"
+    },
+    {
+      "method": "POST",
+      "url": "/company/register",
+      "boundary": "No auth middleware in direct declaration",
+      "file": "routes/company.router.js"
+    },
+    {
+      "method": "POST",
+      "url": "/company/login",
+      "boundary": "No auth middleware in direct declaration",
+      "file": "routes/company.router.js"
+    },
+    {
+      "method": "GET",
+      "url": "/company/branches",
+      "boundary": "Company JWT",
+      "file": "routes/company.router.js"
+    },
+    {
+      "method": "POST",
+      "url": "/company/branches",
+      "boundary": "Company JWT",
+      "file": "routes/company.router.js"
+    },
+    {
+      "method": "POST",
+      "url": "/company/subsidiary/register",
+      "boundary": "No auth middleware in direct declaration",
+      "file": "routes/company.router.js"
+    },
+    {
+      "method": "POST",
+      "url": "/company/subsidiary/login",
+      "boundary": "No auth middleware in direct declaration",
+      "file": "routes/company.router.js"
+    },
+    {
+      "method": "POST",
+      "url": "/company/company-access",
+      "boundary": "Company JWT",
+      "file": "routes/company.router.js"
+    },
+    {
+      "method": "GET",
+      "url": "/company/get-companies",
+      "boundary": "Company JWT",
+      "file": "routes/company.router.js"
+    },
+    {
+      "method": "PATCH",
+      "url": "/company/update",
+      "boundary": "Company JWT",
+      "file": "routes/company.router.js"
+    },
+    {
+      "method": "GET",
+      "url": "/company/subsidiaries/:parentCompanyId",
+      "boundary": "Company JWT",
+      "file": "routes/company.router.js"
+    },
+    {
+      "method": "DELETE",
+      "url": "/company/delete/:id",
+      "boundary": "Company JWT",
+      "file": "routes/company.router.js"
+    },
+    {
+      "method": "POST",
+      "url": "/company/subscription",
+      "boundary": "Company JWT",
+      "file": "routes/company.router.js"
+    },
+    {
+      "method": "GET",
+      "url": "/company/check/membership/:companyId",
+      "boundary": "No auth middleware in direct declaration",
+      "file": "routes/company.router.js"
+    },
+    {
+      "method": "POST",
+      "url": "/subadmin-auth/delete-person",
+      "boundary": "Staff JWT + admin role",
+      "file": "routes/subadmin.auth.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/subadmin-auth/signup-by-company",
+      "boundary": "Company JWT",
+      "file": "routes/subadmin.auth.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/subadmin-auth/signup",
+      "boundary": "Staff JWT + admin role",
+      "file": "routes/subadmin.auth.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/subadmin-auth/login",
+      "boundary": "No auth middleware in direct declaration",
+      "file": "routes/subadmin.auth.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/subadmin-auth/subadmins",
+      "boundary": "Company JWT",
+      "file": "routes/subadmin.auth.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/subadmin-auth/employees",
+      "boundary": "Staff JWT",
+      "file": "routes/subadmin.auth.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/subadmin-auth/profile",
+      "boundary": "Staff JWT",
+      "file": "routes/subadmin.auth.route.js"
+    },
+    {
+      "method": "PATCH",
+      "url": "/subadmin-auth/admin-profile",
+      "boundary": "Staff JWT",
+      "file": "routes/subadmin.auth.route.js"
+    },
+    {
+      "method": "PATCH",
+      "url": "/subadmin-auth/update-profile/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/subadmin.auth.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/subadmin-auth/change-password",
+      "boundary": "Staff JWT",
+      "file": "routes/subadmin.auth.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/subadmin-auth/reset-password",
+      "boundary": "Staff JWT",
+      "file": "routes/subadmin.auth.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/subadmin-auth/forgot-password",
+      "boundary": "Staff JWT",
+      "file": "routes/subadmin.auth.route.js"
+    },
+    {
+      "method": "DELETE",
+      "url": "/subadmin-auth/delete-subadmin",
+      "boundary": "Staff JWT",
+      "file": "routes/subadmin.auth.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/subadmin-auth/branch-wise/:branchName",
+      "boundary": "Staff JWT",
+      "file": "routes/subadmin.auth.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/branch/",
+      "boundary": "Staff JWT",
+      "file": "routes/branch.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/branch/",
+      "boundary": "Staff JWT",
+      "file": "routes/branch.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/branch/branchUniqueId/:branchUniqueId",
+      "boundary": "Staff JWT",
+      "file": "routes/branch.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/branch/subadminUniqueId/:subadminUniqueId",
+      "boundary": "Staff JWT",
+      "file": "routes/branch.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/branch/dateRange",
+      "boundary": "Staff JWT",
+      "file": "routes/branch.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/branch/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/branch.route.js"
+    },
+    {
+      "method": "PATCH",
+      "url": "/branch/update/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/branch.route.js"
+    },
+    {
+      "method": "DELETE",
+      "url": "/branch/delete/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/branch.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/branch/city/:city",
+      "boundary": "Staff JWT",
+      "file": "routes/branch.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/booking/users",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/booking/users/search",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/booking/user/:senderMobile",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/booking/user/credit",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "DELETE",
+      "url": "/booking/user/delete-phone/:phone",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/booking/",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/booking/todaybookings",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/booking/grnNo/:grnNo",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/booking/adminUniqueId/:adminUniqueId",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/search-data",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/booking/pages",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/booking/fromCity/:fromCity/toCity/:toCity/:vehicalNumber",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/get-lrNumber",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "DELETE",
+      "url": "/booking/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "PATCH",
+      "url": "/booking/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "PATCH",
+      "url": "/booking/grnNo/:grnNo",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/updateAllGrnNumbers",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/delivery-booking",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/booking/get-deliveries",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "PATCH",
+      "url": "/booking/update/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/cancelBooking/:grnNo",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/markParcelAsMissing/:grnNo",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/delivery-report",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/parcel-booking-report",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/all-parcel-booking-report",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/parcel-report-serialNo",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/parcel-cancel-report",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/parcel-booking-summary-report",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/parcel-booking-mobileNumber",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/regular-customer-booking",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/branch-Wise-collection-report",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/collection-summary-report",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/collection-toPay-report",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/all-collection-report",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/booking-typew-ise-collection",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/parcel-branch-consolidated-report",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/consolidated-report-branch",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/parcel-branch-wise-gst-report",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/sender-receiver-gst-report",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/pending-delivery-stock-report",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/parcel-status-date-difference-report",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/pending-delivery-luggage-report",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/parcel-received-stock-report",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/delivered-stock-report",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/pending-dispatch-stock-report",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/dispatched-memo-report",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/parcel-incoming-luggages-report",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/grnNolrNo",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/booking/get-above700",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/sales-summary-branchwise",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/summary-report",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/branch-account",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/booking/acparty-account",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/booking/status-wise-summary",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/booking/get-total",
+      "boundary": "Staff JWT",
+      "file": "routes/booking.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/vehicle/",
+      "boundary": "Staff JWT",
+      "file": "routes/vehicle.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/vehicle/",
+      "boundary": "Staff JWT",
+      "file": "routes/vehicle.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/vehicle/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/vehicle.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/vehicle/getVehicleNo/:vehicleNo",
+      "boundary": "Staff JWT",
+      "file": "routes/vehicle.route.js"
+    },
+    {
+      "method": "PATCH",
+      "url": "/vehicle/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/vehicle.route.js"
+    },
+    {
+      "method": "DELETE",
+      "url": "/vehicle/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/vehicle.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/vehicle/status/:status",
+      "boundary": "Staff JWT",
+      "file": "routes/vehicle.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/parcel-loading/parcel-loding-load",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.loading.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/parcel-loading/",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.loading.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/parcel-loading/",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.loading.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/parcel-loading/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.loading.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/parcel-loading/vocherNoUnique/:vocherNoUnique",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.loading.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/parcel-loading/voucher-details-print/:vocherNoUnique",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.loading.route.js"
+    },
+    {
+      "method": "PATCH",
+      "url": "/parcel-loading/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.loading.route.js"
+    },
+    {
+      "method": "DELETE",
+      "url": "/parcel-loading/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.loading.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/parcel-loading/updateGrnNumbers",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.loading.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/parcel-loading/get-lrNumber",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.loading.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/parcel-loading/grnNo/:grnNo",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.loading.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/parcel-loading/vehicalNumber/:vehicalNumber",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.loading.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/parcel-loading/offline-parcel-voucher-details",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.loading.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/parcel-loading/parcel-offline-report",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.loading.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/parcel-loading/parcel-status-report",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.loading.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/parcel-loading/parcel-pending-report",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.loading.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/parcel-loading/branch-to-branch-load",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.loading.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/parcel-loading/branch-to-branch-post",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.loading.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/parcel-loading/dispatched-stock-report",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.loading.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/multi-router/cities",
+      "boundary": "Staff JWT",
+      "file": "routes/multi.router.js"
+    },
+    {
+      "method": "GET",
+      "url": "/multi-router/cities",
+      "boundary": "Staff JWT",
+      "file": "routes/multi.router.js"
+    },
+    {
+      "method": "PATCH",
+      "url": "/multi-router/cities/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/multi.router.js"
+    },
+    {
+      "method": "DELETE",
+      "url": "/multi-router/cities/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/multi.router.js"
+    },
+    {
+      "method": "POST",
+      "url": "/multi-router/cities/delete-cities",
+      "boundary": "Staff JWT",
+      "file": "routes/multi.router.js"
+    },
+    {
+      "method": "POST",
+      "url": "/multi-router/dispatch-types",
+      "boundary": "Staff JWT",
+      "file": "routes/multi.router.js"
+    },
+    {
+      "method": "GET",
+      "url": "/multi-router/dispatch-types",
+      "boundary": "Staff JWT",
+      "file": "routes/multi.router.js"
+    },
+    {
+      "method": "GET",
+      "url": "/multi-router/dispatch-types/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/multi.router.js"
+    },
+    {
+      "method": "PATCH",
+      "url": "/multi-router/dispatch-types/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/multi.router.js"
+    },
+    {
+      "method": "DELETE",
+      "url": "/multi-router/dispatch-types/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/multi.router.js"
+    },
+    {
+      "method": "POST",
+      "url": "/multi-router/package-types",
+      "boundary": "Staff JWT",
+      "file": "routes/multi.router.js"
+    },
+    {
+      "method": "GET",
+      "url": "/multi-router/package-types",
+      "boundary": "Staff JWT",
+      "file": "routes/multi.router.js"
+    },
+    {
+      "method": "GET",
+      "url": "/multi-router/package-types/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/multi.router.js"
+    },
+    {
+      "method": "PATCH",
+      "url": "/multi-router/package-types/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/multi.router.js"
+    },
+    {
+      "method": "DELETE",
+      "url": "/multi-router/package-types/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/multi.router.js"
+    },
+    {
+      "method": "POST",
+      "url": "/multi-router/assets",
+      "boundary": "Staff JWT",
+      "file": "routes/multi.router.js"
+    },
+    {
+      "method": "GET",
+      "url": "/multi-router/assets",
+      "boundary": "Staff JWT",
+      "file": "routes/multi.router.js"
+    },
+    {
+      "method": "GET",
+      "url": "/multi-router/assets/assetType/:assetType",
+      "boundary": "Staff JWT",
+      "file": "routes/multi.router.js"
+    },
+    {
+      "method": "PATCH",
+      "url": "/multi-router/assets/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/multi.router.js"
+    },
+    {
+      "method": "DELETE",
+      "url": "/multi-router/assets/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/multi.router.js"
+    },
+    {
+      "method": "POST",
+      "url": "/multi-router/expenditures",
+      "boundary": "Staff JWT",
+      "file": "routes/multi.router.js"
+    },
+    {
+      "method": "GET",
+      "url": "/multi-router/expenditures",
+      "boundary": "Staff JWT",
+      "file": "routes/multi.router.js"
+    },
+    {
+      "method": "GET",
+      "url": "/multi-router/expenditures/expenditureType/:expenditureType",
+      "boundary": "Staff JWT",
+      "file": "routes/multi.router.js"
+    },
+    {
+      "method": "POST",
+      "url": "/multi-router/expenditures/get-date-range",
+      "boundary": "Staff JWT",
+      "file": "routes/multi.router.js"
+    },
+    {
+      "method": "PATCH",
+      "url": "/multi-router/expenditures/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/multi.router.js"
+    },
+    {
+      "method": "DELETE",
+      "url": "/multi-router/expenditures/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/multi.router.js"
+    },
+    {
+      "method": "POST",
+      "url": "/extra-charge/",
+      "boundary": "Staff JWT",
+      "file": "routes/extra.charge.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/extra-charge/",
+      "boundary": "Staff JWT",
+      "file": "routes/extra.charge.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/extra-charge/filter-city-wise",
+      "boundary": "Staff JWT",
+      "file": "routes/extra.charge.route.js"
+    },
+    {
+      "method": "DELETE",
+      "url": "/extra-charge/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/extra.charge.route.js"
+    },
+    {
+      "method": "PATCH",
+      "url": "/extra-charge/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/extra.charge.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/parcel-unloading/parcel-filter-Unloading",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.unloading.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/parcel-unloading/grnNo/:grnNo",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.unloading.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/parcel-unloading/",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.unloading.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/parcel-unloading/",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.unloading.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/parcel-unloading/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.unloading.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/parcel-unloading/voucher/:voucher",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.unloading.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/parcel-unloading/filter",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.unloading.route.js"
+    },
+    {
+      "method": "PATCH",
+      "url": "/parcel-unloading/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.unloading.route.js"
+    },
+    {
+      "method": "DELETE",
+      "url": "/parcel-unloading/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.unloading.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/parcel-unloading/pending-delivery-report",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.unloading.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/parcel-unloading/branch-to-branch-unload",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.unloading.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/parcel-unloading/branch-to-branch-post",
+      "boundary": "Staff JWT",
+      "file": "routes/parcel.unloading.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/shiprocket/create-order",
+      "boundary": "Staff JWT",
+      "file": "routes/shiprocket.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/cfmaster/",
+      "boundary": "Staff JWT",
+      "file": "routes/cf.master.router.js"
+    },
+    {
+      "method": "GET",
+      "url": "/cfmaster/",
+      "boundary": "Staff JWT",
+      "file": "routes/cf.master.router.js"
+    },
+    {
+      "method": "GET",
+      "url": "/cfmaster/search/:name",
+      "boundary": "Staff JWT",
+      "file": "routes/cf.master.router.js"
+    },
+    {
+      "method": "PATCH",
+      "url": "/cfmaster/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/cf.master.router.js"
+    },
+    {
+      "method": "DELETE",
+      "url": "/cfmaster/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/cf.master.router.js"
+    },
+    {
+      "method": "GET",
+      "url": "/cfmaster/city/:city",
+      "boundary": "Staff JWT",
+      "file": "routes/cf.master.router.js"
+    },
+    {
+      "method": "POST",
+      "url": "/cfextra-charge/",
+      "boundary": "Staff JWT",
+      "file": "routes/cf.extra.charge.router.js"
+    },
+    {
+      "method": "GET",
+      "url": "/cfextra-charge/",
+      "boundary": "Staff JWT",
+      "file": "routes/cf.extra.charge.router.js"
+    },
+    {
+      "method": "GET",
+      "url": "/cfextra-charge/:agentName",
+      "boundary": "Staff JWT",
+      "file": "routes/cf.extra.charge.router.js"
+    },
+    {
+      "method": "PATCH",
+      "url": "/cfextra-charge/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/cf.extra.charge.router.js"
+    },
+    {
+      "method": "DELETE",
+      "url": "/cfextra-charge/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/cf.extra.charge.router.js"
+    },
+    {
+      "method": "POST",
+      "url": "/voucher-generate/credit-voucher-generate",
+      "boundary": "Staff JWT",
+      "file": "routes/cf.voucher.generate.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/voucher-generate/",
+      "boundary": "Staff JWT",
+      "file": "routes/cf.voucher.generate.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/voucher-generate/",
+      "boundary": "Staff JWT",
+      "file": "routes/cf.voucher.generate.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/voucher-generate/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/cf.voucher.generate.route.js"
+    },
+    {
+      "method": "PATCH",
+      "url": "/voucher-generate/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/cf.voucher.generate.route.js"
+    },
+    {
+      "method": "DELETE",
+      "url": "/voucher-generate/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/cf.voucher.generate.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/voucher-generate/voucher-details",
+      "boundary": "Staff JWT",
+      "file": "routes/cf.voucher.generate.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/voucher-generate/voucher-details-print",
+      "boundary": "Staff JWT",
+      "file": "routes/cf.voucher.generate.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/expensive/expenses",
+      "boundary": "Staff JWT",
+      "file": "routes/expensive.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/expensive/expenses",
+      "boundary": "Staff JWT",
+      "file": "routes/expensive.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/expensive/expenses/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/expensive.route.js"
+    },
+    {
+      "method": "PATCH",
+      "url": "/expensive/expenses/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/expensive.route.js"
+    },
+    {
+      "method": "DELETE",
+      "url": "/expensive/expenses/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/expensive.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/expensive/expense-types",
+      "boundary": "Staff JWT",
+      "file": "routes/expensive.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/expensive/expense-types",
+      "boundary": "Staff JWT",
+      "file": "routes/expensive.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/expensive/expense-types/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/expensive.route.js"
+    },
+    {
+      "method": "PATCH",
+      "url": "/expensive/expense-types/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/expensive.route.js"
+    },
+    {
+      "method": "DELETE",
+      "url": "/expensive/expense-types/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/expensive.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/expensive/account-cat",
+      "boundary": "Staff JWT",
+      "file": "routes/expensive.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/expensive/account-cat",
+      "boundary": "Staff JWT",
+      "file": "routes/expensive.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/expensive/account-cat/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/expensive.route.js"
+    },
+    {
+      "method": "PATCH",
+      "url": "/expensive/account-cat/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/expensive.route.js"
+    },
+    {
+      "method": "DELETE",
+      "url": "/expensive/account-cat/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/expensive.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/expensive/account-subcat",
+      "boundary": "Staff JWT",
+      "file": "routes/expensive.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/expensive/account-subcat",
+      "boundary": "Staff JWT",
+      "file": "routes/expensive.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/expensive/account-subcat/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/expensive.route.js"
+    },
+    {
+      "method": "PATCH",
+      "url": "/expensive/account-subcat/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/expensive.route.js"
+    },
+    {
+      "method": "DELETE",
+      "url": "/expensive/account-subcat/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/expensive.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/expensive/customers",
+      "boundary": "Staff JWT",
+      "file": "routes/expensive.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/expensive/customers",
+      "boundary": "Staff JWT",
+      "file": "routes/expensive.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/expensive/customers/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/expensive.route.js"
+    },
+    {
+      "method": "PATCH",
+      "url": "/expensive/customers/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/expensive.route.js"
+    },
+    {
+      "method": "DELETE",
+      "url": "/expensive/customers/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/expensive.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/bank/create",
+      "boundary": "Staff JWT",
+      "file": "routes/bank.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/bank/get",
+      "boundary": "Staff JWT",
+      "file": "routes/bank.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/bank/banks/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/bank.route.js"
+    },
+    {
+      "method": "PATCH",
+      "url": "/bank/banks/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/bank.route.js"
+    },
+    {
+      "method": "DELETE",
+      "url": "/bank/banks/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/bank.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/item/create",
+      "boundary": "Staff JWT",
+      "file": "routes/item.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/item/get",
+      "boundary": "Staff JWT",
+      "file": "routes/item.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/item/items/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/item.route.js"
+    },
+    {
+      "method": "PATCH",
+      "url": "/item/items/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/item.route.js"
+    },
+    {
+      "method": "DELETE",
+      "url": "/item/items/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/item.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/vendor/create",
+      "boundary": "Staff JWT",
+      "file": "routes/vendor.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/vendor/get",
+      "boundary": "Staff JWT",
+      "file": "routes/vendor.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/vendor/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/vendor.route.js"
+    },
+    {
+      "method": "PATCH",
+      "url": "/vendor/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/vendor.route.js"
+    },
+    {
+      "method": "DELETE",
+      "url": "/vendor/:id",
+      "boundary": "Staff JWT",
+      "file": "routes/vendor.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/branch-report/:branchCode/live-snapshot",
+      "boundary": "Staff JWT",
+      "file": "routes/branch.report.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/branch-report/:branchCode/live-status",
+      "boundary": "Staff JWT",
+      "file": "routes/branch.report.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/billing/status",
+      "boundary": "Company JWT (router boundary)",
+      "file": "routes/billing.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/billing/staff-status",
+      "boundary": "Staff JWT",
+      "file": "routes/billing.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/billing/history",
+      "boundary": "Company JWT (router boundary)",
+      "file": "routes/billing.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/billing/orders",
+      "boundary": "Company JWT (router boundary)",
+      "file": "routes/billing.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/billing/verify",
+      "boundary": "Company JWT (router boundary)",
+      "file": "routes/billing.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/billing/reconcile",
+      "boundary": "Company JWT (router boundary)",
+      "file": "routes/billing.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/api/owner/login",
+      "boundary": "Owner credentials / login limit",
+      "file": "routes/owner.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/api/owner/session",
+      "boundary": "Owner session cookie",
+      "file": "routes/owner.route.js"
+    },
+    {
+      "method": "POST",
+      "url": "/api/owner/logout",
+      "boundary": "Owner session cookie",
+      "file": "routes/owner.route.js"
+    },
+    {
+      "method": "GET",
+      "url": "/api/owner/reports",
+      "boundary": "Owner session cookie",
+      "file": "routes/owner.route.js"
+    }
+  ]
+}

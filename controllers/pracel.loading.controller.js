@@ -1,10 +1,14 @@
+import { sendReport, sendEmptyReport, queryReportPage, sendReportPage, getReportPagination } from "../utils/report-pagination.js";
+import { writableFields } from "../utils/update-fields.js";
+import { recordParcel } from "../services/parcel-workflow.js";
+import { sendError, escapeRegex, dateRange } from "../utils/api-error.js";
 import ParcelLoading from "../models/pracel.loading.model.js";
 import { Booking } from "../models/booking.model.js";
 import CFMaster from "../models/cf.master.model.js";
 const generateVocherNoUnique = () => {
   return Math.floor(100000 + Math.random() * 900000);
 };
- 
+
 
 // const getBookingsBetweenDates = async (req, res) => {
 //   try {
@@ -23,22 +27,22 @@ const generateVocherNoUnique = () => {
 //     // Step 1: Base filter
 //     const filter = {
 //       companyId,
-//       bookingDate: { $gte: start, $lte: end },
+//       bookingDate: range,
 //       bookingStatus: 0,
 //       agent: "", // Only user bookings
 //     };
 
 //     // Step 2: Optional filters
 //     if (fromCity) {
-//       filter.fromCity = new RegExp(`^${fromCity}$`, "i");
+//       filter.fromCity = new RegExp(`^${escapeRegex(fromCity)}$`, "i");
 //     }
 
 //     if (Array.isArray(toCity) && toCity.length > 0) {
 //       filter.toCity = {
-//         $in: toCity.map((city) => new RegExp(`^${city}$`, "i")),
+//         $in: toCity.map((city) => new RegExp(`^${escapeRegex(city)}$`, "i")),
 //       };
 //     } else if (toCity) {
-//       filter.toCity = new RegExp(`^${toCity}$`, "i");
+//       filter.toCity = new RegExp(`^${escapeRegex(toCity)}$`, "i");
 //     }
 
 //     if (pickUpBranch) {
@@ -46,7 +50,7 @@ const generateVocherNoUnique = () => {
 //     }
 
 //     // Step 3: Query bookings
-//     const bookings = await Booking.find(filter);
+//     const bookings = await Booking.find(filter).lean();
 
 //     if (bookings.length === 0) {
 //       return res.status(404).json({
@@ -76,11 +80,13 @@ const generateVocherNoUnique = () => {
 //     res.status(200).json(userBookings);
 //   } catch (error) {
 //     console.error("Error fetching bookings:", error);
-//     res.status(500).json({ error: "Internal Server Error" });
+//     return sendError(res, error);
 //   }
 // };
 
 const getBookingsBetweenDates = async (req, res) => {
+  let databasePagination;
+  const report = payload => sendReportPage(res, payload, databasePagination);
   try {
     const companyId = req.user?.companyId;
     const { startDate, endDate, fromCity, toCity, pickUpBranch } = req.body;
@@ -89,10 +95,7 @@ const getBookingsBetweenDates = async (req, res) => {
       return res.status(400).json({ message: "Start date and end date are required!" });
     }
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    start.setHours(0, 0, 0, 0);
-    end.setHours(23, 59, 59, 999);
+    const range = dateRange(startDate, endDate);
 
     // Step 1: Build filter
     const filter = {
@@ -103,15 +106,15 @@ const getBookingsBetweenDates = async (req, res) => {
 
     // Step 2: Optional filters
     if (fromCity) {
-      filter.fromCity = new RegExp(`^${fromCity}$`, "i");
+      filter.fromCity = new RegExp(`^${escapeRegex(fromCity)}$`, "i");
     }
 
     if (Array.isArray(toCity) && toCity.length > 0) {
       filter.toCity = {
-        $in: toCity.map((city) => new RegExp(`^${city}$`, "i")),
+        $in: toCity.map((city) => new RegExp(`^${escapeRegex(city)}$`, "i")),
       };
     } else if (toCity) {
-      filter.toCity = new RegExp(`^${toCity}$`, "i");
+      filter.toCity = new RegExp(`^${escapeRegex(toCity)}$`, "i");
     }
 
     if (pickUpBranch) {
@@ -119,16 +122,18 @@ const getBookingsBetweenDates = async (req, res) => {
     }
 
     // Step 3: Get bookings directly
-    const bookings = await Booking.find(filter);
+    const page = await queryReportPage(Booking.find(filter).sort({ _id: 1 }), req);
+    const bookings = page.rows;
+    databasePagination = page.pagination;
 
-    if (!bookings.length) {
-      return res.status(404).json({
+    if (!page.totals.totalRecords) {
+      return sendEmptyReport(req, res, {
         message: "No parcels found for the given filters!",
       });
     }
 
     // Step 4: Return all filtered bookings (CFMaster check removed)
-    res.status(200).json(bookings);
+    report(bookings);
   } catch (error) {
     console.error("Error fetching bookings:", error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -165,225 +170,22 @@ const getParcelByGrnNo = async (req, res) => {
 
 
 const createParcel = async (req, res) => {
-  const companyId = req.user?.companyId;
-  if (!companyId) {
-    return res.status(401).json({ message: "Unauthorized: Company ID missing" });
-  }
-
-  const session = await ParcelLoading.startSession();
-  session.startTransaction();
-
   try {
-    const {
-      senderName,
-      parcelStatus,
-      vehicalNumber,
-      driverName,
-      driverNo,
-      remarks,
-      grnNo,
-      lrNumber,
-      fromCity,
-      toCity,
-      fromBranch,
-    } = req.body;
-
-    // Validate required fields
-    if (
-      !fromCity ||
-      !fromBranch ||
-      !vehicalNumber ||
-      !driverName ||
-      !driverNo ||
-      !Array.isArray(grnNo) ||
-      grnNo.length === 0 ||
-      !Array.isArray(lrNumber) ||
-      lrNumber.length === 0
-    ) {
-      return res.status(400).json({ message: "All required fields must be provided" });
-    }
-
-    if(!Array.isArray(toCity) || toCity.length === 0){
-      return res.status(400).json({ message: "toCity must be a non-empty array" });
-    }
-
-    if (!req.user || !req.user.id) {
-      throw new Error("User ID is required for loadingBy field.");
-    }
-
-    // Fetch bookings for the given GRNs and company, using the transaction session
-    const existingBookings = await Booking.find({
-      grnNo: { $in: grnNo },
-      companyId,
-    }).session(session);
-
-    // Check if all GRNs exist
-    if (existingBookings.length !== grnNo.length) {
-      const foundGrns = existingBookings.map(b => b.grnNo);
-      const missingGrns = grnNo.filter(grn => !foundGrns.includes(grn));
-      throw new Error(`Some GRNs not found: ${missingGrns.join(", ")}`);
-    }
-
-    // Check if any GRNs are already loaded (bookingStatus != 0)
-    const alreadyLoaded = existingBookings.filter(b => b.bookingStatus !== 0);
-    if (alreadyLoaded.length > 0) {
-      const already = alreadyLoaded.map(b => b.grnNo);
-      throw new Error(`These GRNs are already loaded: ${already.join(", ")}`);
-    }
-
-    // Normalize toCity array values (unique, trimmed, lowercase)
-    const uniqueToCity = [...new Set(toCity.map(city => city.trim().toLowerCase()))];
-
-    const loadingBy = req.user.id;
-    const loadingDate = new Date();
-    const vocherNoUnique = generateVocherNoUnique(); // your voucher number generator function
-    
-    // Create new ParcelLoading document
-    const parcel = await new ParcelLoading({
-      loadingType: "offload",
-      companyId,
-      vehicalNumber,
-      fromCity,
-      toCity: uniqueToCity,
-      fromBranch,
-      bookingStatus: 1,
-      parcelStatus,
-      loadingBy,
-      senderName,
-      vocherNoUnique,
-      loadingDate,
-      driverName,
-      driverNo,
-      remarks,
-      grnNo,
-      lrNumber,
-    }).save({ session });
-
-    // Update Booking documents with additional loading fields
-    await Booking.updateMany(
-      { grnNo: { $in: grnNo }, companyId },
-      {
-        $set: {
-          bookingStatus: 1,
-          loadingDate,
-          vehicalNumber,
-          driverName,
-          ltDate: new Date(),
-          loadingBranchname: req.user?.branchName || '', // assuming fromBranch is name string
-          loadingByemp: req.user?.name || req.user?.username || '', // use actual user info
-        },
-      },
-      { session }
-    );
-
-    // Commit the transaction if all succeeds
-    await session.commitTransaction();
-
-    res.status(201).json({
-      message: "Parcel created successfully and bookings updated",
-      parcel,
-    });
-
-  } catch (error) {
-    // Rollback if error occurs
-    if (session.inTransaction()) {
-      await session.abortTransaction();
-    }
-    console.error("Error creating parcel:", error);
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
-  } finally {
-    session.endSession();
-  }
+    const { parcel } = await recordParcel(req.body, req.user, { branchTransfer: false });
+    return res.status(201).json({ message: 'Parcel created successfully and bookings updated', parcel });
+  } catch (error) { return sendError(res, error); }
 };
-
 const createBranchToBranch = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
-    const loadingBy = req.user?.id;
-    const loadingBranchname = req.user?.branchName || "";
-    const loadingByemp = req.user?.name || req.user?.username || "";
-
-    if (!companyId || !loadingBy) {
-      return res.status(401).json({ message: "Unauthorized: Company ID or User ID missing" });
-    }
-
-    const {
-      fromCity,
-      toCity,
-      fromBranch,
-      lrNumber,
-      grnNo,
-      vehicalNumber,
-      remarks,
-    } = req.body;
-
-    // Validate required fields
-    if (
-      !fromCity ||
-      !toCity ||
-      !fromBranch ||
-      !vehicalNumber ||
-      !Array.isArray(grnNo) ||
-      grnNo.length === 0 ||
-      !Array.isArray(lrNumber) ||
-      lrNumber.length === 0
-    ) {
-      return res.status(400).json({ message: "Required fields are missing or invalid" });
-    }
-
-    const grnNumbers = grnNo.map(Number);
-    const loadingDate = new Date();
-    const uniqueToCity = [...new Set(toCity.map((city) => city.trim().toLowerCase()))];
-    const vocherNoUnique = generateVocherNoUnique();
-
-    // 1️⃣ Create new ParcelLoading
-    const parcel = new ParcelLoading({
-      loadingType: "branchLoad",
-      companyId,
-      vocherNoUnique,
-      fromCity,
-      toCity: uniqueToCity,
-      fromBranch,
-      loadingBy,
-      lrNumber,
-      grnNo: grnNumbers,
-      vehicalNumber,
-      remarks,
-      loadingDate,
-    });
-
-    await parcel.save();
-
-    // 2️⃣ Update related Booking entries
-    await Booking.updateMany(
-      { grnNo: { $in: grnNumbers }, companyId },
-      {
-        $set: {
-          bookingStatus: 1,
-          loadingDate,
-          vehicalNumber,
-          loadingBranchname,
-          loadingByemp,
-        },
-      }
-    );
-
-    // ✅ Success response
-    return res.status(201).json({
-      message: "Parcel loading (branch to branch) created successfully",
-      parcel,
-    });
-  } catch (error) {
-    console.error("Error in createBranchToBranch:", error);
-    return res.status(500).json({ error: error.message });
-  }
+    const { parcel } = await recordParcel(req.body, req.user, { branchTransfer: true });
+    return res.status(201).json({ message: 'Parcel created successfully and bookings updated', parcel });
+  } catch (error) { return sendError(res, error); }
 };
-
 
 const getAllParcels = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    const parcels = await ParcelLoading.find({ companyId });
+    const parcels = await ParcelLoading.find({ companyId }).lean();
     if (parcels.length === 0) {
       return res.status(400).json({ message: "no parcels found !" });
     }
@@ -391,7 +193,7 @@ const getAllParcels = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
-};   
+};
 
 const getParcelVocherNoUnique = async (req, res) => {
   try {
@@ -468,8 +270,6 @@ const getParcelById = async (req, res) => {
     }
 
     const parcel = await ParcelLoading.findOne({ _id: id, companyId })
-      .populate("fromBranch", "branchName")
-      .populate("toCity") // if needed, adjust or remove
       .lean();
 
     if (!parcel) {
@@ -500,7 +300,7 @@ const updateParcel = async (req, res) => {
     // Only update if the parcel belongs to the same company
     const updatedParcel = await ParcelLoading.findOneAndUpdate(
       { _id: id, companyId },
-      req.body,
+      { $set: writableFields(req.body) },
       {
         new: true,
         runValidators: true,
@@ -516,7 +316,7 @@ const updateParcel = async (req, res) => {
     console.error("Error updating parcel:", error);
     res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
-}; 
+};
 
 const deleteParcel = async (req, res) => {
   try {
@@ -546,6 +346,8 @@ const deleteParcel = async (req, res) => {
 };
 
 const parcelOfflineReport = async (req, res) => {
+  let databasePagination;
+  const report = payload => sendReportPage(res, payload, databasePagination);
   try {
     const companyId = req.user?.companyId;
 
@@ -573,44 +375,46 @@ const parcelOfflineReport = async (req, res) => {
       loadingDate: { $gte: startDate, $lte: endDate },
     };
 
-    if (fromCity) filter.fromCity = new RegExp(`^${fromCity}$`, "i");
+    if (fromCity) filter.fromCity = new RegExp(`^${escapeRegex(fromCity)}$`, "i");
 
     if (Array.isArray(toCity) && toCity.length > 0) {
-      filter.toCity = { $in: toCity.map(city => new RegExp(`^${city}$`, "i")) };
+      filter.toCity = { $in: toCity.map(city => new RegExp(`^${escapeRegex(city)}$`, "i")) };
     } else if (typeof toCity === "string" && toCity.trim()) {
-      filter.toCity = new RegExp(`^${toCity}$`, "i");
+      filter.toCity = new RegExp(`^${escapeRegex(toCity)}$`, "i");
     }
 
     if (fromBranch) filter.fromBranch = fromBranch;
 
     // Step 2: Get ParcelLoading data
-    const parcelLoadings = await ParcelLoading.find(filter, { grnNo: 1 }).lean();
+    const parcelLoadings = await ParcelLoading.find(filter, { grnNo: 1 }).sort({ _id: 1 }).lean();
 
     if (!parcelLoadings.length) {
-      return res.status(404).json({ message: "No parcel loadings found in given criteria." });
+      return sendEmptyReport(req, res, { message: "No parcel loadings found in given criteria." });
     }
 
     // Step 3: Extract GRNs
     const grnNoList = parcelLoadings.flatMap(p => p.grnNo).filter(Boolean);
 
     if (!grnNoList.length) {
-      return res.status(404).json({ message: "No GRN numbers found in parcel loadings." });
+      return sendEmptyReport(req, res, { message: "No GRN numbers found in parcel loadings." });
     }
 
     // Step 4: Fetch bookings based on GRN numbers
-    const bookings = await Booking.find({
+    const page = await queryReportPage(Booking.find({
       grnNo: { $in: grnNoList },
       companyId
     })
-      .sort({ createdAt: -1 })
-      .lean();
+      .sort({ createdAt: -1, _id: -1 })
+      .lean(), req);
+    const bookings = page.rows;
+    databasePagination = page.pagination;
 
-    if (!bookings.length) {
-      return res.status(404).json({ message: "No bookings found for the matched GRN numbers." });
+    if (!page.totals.totalRecords) {
+      return sendEmptyReport(req, res, { message: "No bookings found for the matched GRN numbers." });
     }
 
-    res.status(200).json({
-      count: bookings.length,
+    report({
+      count: page.totals.totalRecords,
       data: bookings,
     });
 
@@ -624,6 +428,7 @@ const parcelOfflineReport = async (req, res) => {
 const updateAllGrnNumbers = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
+    if (!companyId) return res.status(401).json({ message: "Company ID missing" });
 
     const { grnNumbers, updateFields } = req.body;
 
@@ -640,7 +445,8 @@ const updateAllGrnNumbers = async (req, res) => {
     }
 
     // Add updatedAt timestamp
-    updateFields.updatedAt = new Date();
+    const safeUpdates = writableFields(updateFields);
+    safeUpdates.updatedAt = new Date();
 
     // Prepare query filter with companyId for security if applicable
     const filter = {
@@ -654,7 +460,7 @@ const updateAllGrnNumbers = async (req, res) => {
     const beforeUpdate = await Booking.find(filter);
 
     // Update all matched bookings
-    const updateResult = await Booking.updateMany(filter, { $set: updateFields });
+    const updateResult = await Booking.updateMany(filter, { $set: safeUpdates });
 
     // Fetch all updated records
     const afterUpdate = await Booking.find(filter);
@@ -688,6 +494,7 @@ const getParcelByLrNumber = async (req, res) => {
     lrNumber = lrNumber.map((lr) => lr.trim());
 
     const companyId = req.user?.companyId;
+    if (!companyId) return res.status(401).json({ message: "Company ID missing" });
     const filter = { lrNumber: { $in: lrNumber } };
 
     if (companyId) {
@@ -746,6 +553,8 @@ const getParcelByVehicalNumber = async (req, res) => {
 
 
 const parcelStatusReport = async (req, res) => {
+  let databasePagination;
+  const report = payload => sendReportPage(res, payload, databasePagination);
   try {
     const companyId = req.user?.companyId;
 
@@ -768,19 +577,21 @@ const parcelStatusReport = async (req, res) => {
     }
 
     // Build the query with companyId filtering
-    const parcels = await ParcelLoading.find({
+    const page = await queryReportPage(ParcelLoading.find({
       fromCity,
       toCity,
       parcelStatus,
       companyId,
       loadingDate: { $gte: start, $lte: end }, // Adjust if you use a different date field
-    });
+    }).sort({ _id: 1 }), req);
+    const parcels = page.rows;
+    databasePagination = page.pagination;
 
-    if (!parcels.length) {
-      return res.status(404).json({ success: false, message: "No parcels found" });
+    if (!page.totals.totalRecords) {
+      return sendEmptyReport(req, res, { success: false, message: "No parcels found" });
     }
 
-    res.status(200).json({ success: true, count: parcels.length, data: parcels });
+    report({ success: true, count: page.totals.totalRecords, data: parcels });
   } catch (error) {
     console.error("Error in parcelStatusReport:", error);
     res.status(500).json({ success: false, message: error.message });
@@ -789,6 +600,8 @@ const parcelStatusReport = async (req, res) => {
 
 
 const parcelPendingReport = async (req, res) => {
+  let databasePagination;
+  const report = payload => sendReportPage(res, payload, databasePagination);
   try {
 
       const companyId = req.user?.companyId;
@@ -825,25 +638,27 @@ const parcelPendingReport = async (req, res) => {
     toBranch = toBranch.trim().toLowerCase();
 
     // Query pending parcels
-    const pendingParcels = await ParcelLoading.find({
+    const page = await queryReportPage(ParcelLoading.find({
       companyId,
       fromCity,
       toCity,
       fromBranch,
       toBranch,
       parcelStatus: 0, // Assuming 0 means pending
-    });
+    }).sort({ _id: 1 }), req);
+    const pendingParcels = page.rows;
+    databasePagination = page.pagination;
 
-    if (pendingParcels.length === 0) {
-      return res.status(404).json({
+    if (page.totals.totalRecords === 0) {
+      return sendEmptyReport(req, res, {
         success: false,
         message: "No pending parcels found for the specified criteria",
       });
     }
 
-    res.status(200).json({
+    report({
       success: true,
-      count: pendingParcels.length,
+      count: page.totals.totalRecords,
       data: pendingParcels,
     });
   } catch (error) {
@@ -854,6 +669,8 @@ const parcelPendingReport = async (req, res) => {
 
 
 const getBookingsByDateAndBranch = async (req, res) => {
+  let databasePagination;
+  const report = payload => sendReportPage(res, payload, databasePagination);
   try {
     const { fromBookingDate, toBookingDate, fromBranch } = req.body;
     const { companyId } = req.user || {};
@@ -874,29 +691,31 @@ const getBookingsByDateAndBranch = async (req, res) => {
     const to = new Date(toBookingDate);
     to.setHours(23, 59, 59, 999); // Include entire day
 
-    const bookings = await Booking.find({
+    const page = await queryReportPage(Booking.find({
       companyId,
       bookingDate: { $gte: from, $lte: to },
       pickUpBranch: fromBranch,
-       bookingStatus: 0, 
-    }).sort({ bookingDate: -1 });
+       bookingStatus: 0,
+    }).sort({ bookingDate: -1, _id: -1 }), req);
+    const bookings = page.rows;
+    databasePagination = page.pagination;
 
-    if (!bookings.length) {
-      return res.status(200).json({ message: "No parcels available" });
+    if (!page.totals.totalRecords) {
+      return report({ message: "No parcels available" });
     }
 
-    return res.status(200).json(bookings);
+    return report(bookings);
   } catch (error) {
     console.error("Error fetching bookings:", error);
     return res
       .status(500)
-      .json({ success: false, message: "Internal Server Error" });  
+      .json({ success: false, message: "Internal Server Error" });
   }
 };
 
 
 const offlineParcelVoucherDetailsPrint = async (req, res) => {
-  try {   
+  try {
     const { companyId } = req.user || {};
     const vocherNoUnique = req.params.vocherNoUnique?.trim();
 
@@ -943,7 +762,7 @@ const offlineParcelVoucherDetailsPrint = async (req, res) => {
     let allTotal = 0;
     let allQuantity = 0;
 
-    const bookingTypeSummary = { 
+    const bookingTypeSummary = {
       paid: { totalBookings: 0, grandTotal: 0 },
       toPay: { totalBookings: 0, grandTotal: 0 },
       credit: { totalBookings: 0, grandTotal: 0 },
@@ -1002,6 +821,7 @@ const offlineParcelVoucherDetailsPrint = async (req, res) => {
 
 
 const offlineParcelVoucherDetails = async (req, res) => {
+  const report = payload => sendReport(req, res, payload, 'offlineParcelVoucherDetails');
   try {
     const { companyId } = req.user || {};
     const { fromDate, toDate, vehicalNumber, fromCity, toCity, fromBranch } = req.body;
@@ -1028,23 +848,22 @@ const offlineParcelVoucherDetails = async (req, res) => {
 
     // ✅ Apply filters using case-insensitive regex
     if (vehicalNumber) filter.vehicalNumber = vehicalNumber;
-    if (fromCity) filter.fromCity = { $regex: `^${fromCity}$`, $options: "i" };
-    if (toCity) filter.toCity = { $regex: `^${toCity}$`, $options: "i" };
-    if (fromBranch) filter.fromBranch = { $regex: `^${fromBranch}$`, $options: "i" };
+    if (fromCity) filter.fromCity = { $regex: `^${escapeRegex(fromCity)}$`, $options: "i" };
+    if (toCity) filter.toCity = { $regex: `^${escapeRegex(toCity)}$`, $options: "i" };
+    if (fromBranch) filter.fromBranch = { $regex: `^${escapeRegex(fromBranch)}$`, $options: "i" };
 
-    const parcels = await ParcelLoading.find(filter).sort({ createdAt: -1 });
+    const parcels = await ParcelLoading.find(filter).sort({ loadingDate: -1, _id: -1 }).lean();
 
     if (!parcels.length) {
-      return res.status(404).json({ message: "No parcels found in the given date range!" });
+      return sendEmptyReport(req, res, { message: "No parcels found in the given date range!" });
     }
 
-    const grnNos = parcels.flatMap((parcel) => parcel.grnNo || []);
-    const bookings = await Booking.find({ grnNo: { $in: grnNos }, companyId });
+    const grnNos = [...new Set(parcels.flatMap((parcel) => parcel.grnNo || []))];
+    const bookings = await Booking.find({ grnNo: { $in: grnNos }, companyId }).sort({ _id: 1 }).lean();
+    const bookingsByGrn = new Map(bookings.map(booking => [booking.grnNo, booking]));
 
     const result = parcels.map((parcel) => {
-      const matchingBookings = bookings.filter((booking) =>
-        parcel.grnNo?.includes(booking.grnNo)
-      );
+      const matchingBookings = [...new Set(parcel.grnNo || [])].map(grn => bookingsByGrn.get(grn)).filter(Boolean);
 
       let totalQuantity = 0;
       let grandTotal = 0;
@@ -1071,7 +890,7 @@ const offlineParcelVoucherDetails = async (req, res) => {
       };
     });
 
-    res.status(200).json(result);
+    report(result);
   } catch (error) {
     console.error("Error in offlineParcelVoucherDetails:", error);
     res.status(500).json({ error: error.message });
@@ -1081,6 +900,8 @@ const offlineParcelVoucherDetails = async (req, res) => {
 
 
 const dispatchedStockReport = async (req, res) => {
+  let databasePagination;
+  const report = payload => sendReportPage(res, payload, databasePagination);
   try {
     const { companyId } = req.user || {};
     const { fromDate, toDate, fromCity, toCity, fromBranch } = req.body;
@@ -1110,20 +931,22 @@ const dispatchedStockReport = async (req, res) => {
     if (toCity) query.toCity = toCity;
     if (fromBranch) query.fromBranch = fromBranch;
 
-    const dispatchedStock = await ParcelLoading.find(query)
-      .sort({ loadingDate: -1 })
-      .lean();
+    const page = await queryReportPage(ParcelLoading.find(query)
+      .sort({ loadingDate: -1, _id: -1 })
+      .lean(), req);
+    const dispatchedStock = page.rows;
+    databasePagination = page.pagination;
 
-    if (!dispatchedStock.length) {
-      return res.status(404).json({
+    if (!page.totals.totalRecords) {
+      return sendEmptyReport(req, res, {
         message: "No dispatched stock found for the given criteria",
         success: false,
       });
     }
 
-    res.status(200).json({
+    report({
       success: true,
-      count: dispatchedStock.length,
+      count: page.totals.totalRecords,
       data: dispatchedStock,
     });
   } catch (error) {

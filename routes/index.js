@@ -11,8 +11,8 @@ import parcelUnloadingRouter from '../routes/parcel.unloading.route.js'
 import expensiveRouter from '../routes/expensive.route.js'  
 import bankRouter from '../routes/bank.route.js'
 import itemRouter from '../routes/item.route.js'
-import vendorRouter from '../routes/vendor.route.js' // Assuming you have a vendor route
-import branchReportRouter from '../routes/branch.report.route.js' // Assuming you have a branch report route
+import vendorRouter from '../routes/vendor.route.js'  
+import branchReportRouter from '../routes/branch.report.route.js'  
 import shipRocketRouter from '../routes/shiprocket.route.js'
 
 //company routes  
@@ -40,12 +40,12 @@ app.use("/shiprocket",shipRocketRouter)
 app.use("/cfmaster",masterRouter)
 app.use("/cfextra-charge",cfExtraChargeRouter)
 app.use("/voucher-generate",voucherRouter)
-app.use("/expensive",expensiveRouter)
+app.use("/expensive",expensiveRouter)  
 app.use("/bank",bankRouter)
 app.use("/item",itemRouter)
-app.use("/vendor",vendorRouter) // Assuming you have a vendor route
+app.use("/vendor",vendorRouter)  
 
-app.use("/branch-report",branchReportRouter) // Assuming you have a branch report route    
+app.use("/branch-report",branchReportRouter)  
 
 
-export default app      
+export default app                 

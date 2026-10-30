@@ -1,3 +1,5 @@
+import CFMaster from "../models/cf.master.model.js";
+import { writableFields } from "../utils/update-fields.js";
 import CFExtraCharge from '../models/cf.extra.charge.model.js';
 
 const createCFExtraCharge = async (req, res) => {
@@ -17,6 +19,7 @@ const createCFExtraCharge = async (req, res) => {
       isActive
     } = req.body;
 
+    if (!await CFMaster.exists({ _id: agentName, companyId })) return res.status(400).json({ message: 'Agent does not belong to this company' });
     const newCharge = new CFExtraCharge({
       companyId,  // add companyId here
       agentName,
@@ -77,7 +80,7 @@ const updateCFExtraCharge = async (req, res) => {
 
     const updatedCharge = await CFExtraCharge.findOneAndUpdate(
       { _id: req.params.id, companyId },
-      req.body,
+      { $set: writableFields(req.body) },
       { new: true, runValidators: true }
     );
 

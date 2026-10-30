@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const cfExtraCharge=new mongoose.Schema({
     companyId:{type:mongoose.Schema.Types.ObjectId,ref:"Company",required:true},
- agentName:{type:mongoose.Schema.Types.ObjectId,ref:"Masterbooking",required:true},
+ agentName:{type:mongoose.Schema.Types.ObjectId,ref:"CFMaster",required:true},
  chargeName:{type:String,required:true},
  fromCity:{type:String,required:true},
  toCity:{type:String,required:true},

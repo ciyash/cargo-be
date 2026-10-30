@@ -6,11 +6,10 @@ const checkCompanyAccess = async (req, res, next) => {
   try {
     const companyId = req.user?.companyId;
 
-    console.log(req.user,'jdhkjfdkj')
 
-    if (!companyId) { 
+    if (!companyId) {
       return res.status(401).json({ message: "Company ID missing in token" });
-    } 
+    }
 
     const company = await Company.findById(companyId).select("isBlocked companyAccess");
 

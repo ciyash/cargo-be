@@ -18,6 +18,7 @@ import Vendor from '../models/vendor.model.js';
     }
 
     const vendor = new Vendor({
+      companyId: req.user.companyId,
       name,
       companyName: companyName || '',
       displayName: displayName || '',
@@ -43,7 +44,7 @@ import Vendor from '../models/vendor.model.js';
 // Get all vendors
  const getAllVendors = async (req, res) => {
   try {
-    const vendors = await Vendor.find();
+    const vendors = await Vendor.find({ companyId: req.user.companyId }).lean();
     res.status(200).json(vendors);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching vendors', error: error.message });
@@ -53,7 +54,7 @@ import Vendor from '../models/vendor.model.js';
 // Get vendor by ID
  const getVendorById = async (req, res) => {
   try {
-    const vendor = await Vendor.findById(req.params.id);
+    const vendor = await Vendor.findOne({ _id: req.params.id, companyId: req.user.companyId });
     if (!vendor) {
       return res.status(404).json({ message: 'Vendor not found' });
     }
@@ -66,7 +67,7 @@ import Vendor from '../models/vendor.model.js';
 // Update vendor
  const updateVendor = async (req, res) => {
   try {
-    const vendor = await Vendor.findById(req.params.id);
+    const vendor = await Vendor.findOne({ _id: req.params.id, companyId: req.user.companyId });
     if (!vendor) {
       return res.status(404).json({ message: 'Vendor not found' });
     }
@@ -88,7 +89,7 @@ import Vendor from '../models/vendor.model.js';
     if (workPhone !== undefined) vendor.workPhone = workPhone;
     if (mobile !== undefined) vendor.mobile = mobile;
 
-    if (bankDetails) {
+    if (req.body.bankDetails) {
       vendor.bankDetails.accountNumber = bankDetails.accountNumber || '';
       vendor.bankDetails.accountName = bankDetails.accountName || '';
       vendor.bankDetails.bankName = bankDetails.bankName || '';
@@ -106,7 +107,7 @@ import Vendor from '../models/vendor.model.js';
 // Delete vendor
  const deleteVendor = async (req, res) => {
   try {
-    const vendor = await Vendor.findByIdAndDelete(req.params.id);
+    const vendor = await Vendor.findOneAndDelete({ _id: req.params.id, companyId: req.user.companyId });
     if (!vendor) {
       return res.status(404).json({ message: 'Vendor not found' });
     }

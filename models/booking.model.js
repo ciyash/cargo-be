@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const packageSchema = new mongoose.Schema({
-  quantity: { type: Number, default: 1 }, 
+  quantity: { type: Number, default: 1 },
   packageType: { type: String, required: true },
   contains: { type: String, default: null },
   weight: { type: Number },
@@ -48,7 +48,7 @@ const bookingSchema = new mongoose.Schema(
       required: true,
     },
    toPayDeliveredAmount: {
-   type: Number, 
+   type: Number,
   default: null
 },
 
@@ -107,7 +107,7 @@ const bookingSchema = new mongoose.Schema(
     deliveryCity:{type:String,default:null},
     deliveryEmployee: { type: String, default: null },
     deliveryBranchName: { type: String, default: null },
-    
+
     //last transactions
     ltDate: { type: Date, default: () => new Date() },
     ltCity: { type: String, default: null },
@@ -120,7 +120,7 @@ const bookingSchema = new mongoose.Schema(
     cancelCity: { type: String, default: null },
     cancelBranch: { type: String, default: null },
     refundAmount:{type:Number,default:0},
-   
+
 //  missing  data
     missingDate: { type: Date, default: null },
     missingByUser: { type: String, default: null },
@@ -134,6 +134,12 @@ const bookingSchema = new mongoose.Schema(
 
 // bookingSchema.index({ grnNo: 1, adminUniqueId: 1, bookingStatus: 1 });
 bookingSchema.index({ companyId: 1, grnNo: 1 }, { unique: true });
+bookingSchema.index({ companyId: 1, bookingStatus: 1, bookingDate: -1 });
+bookingSchema.index({ companyId: 1, lrNumber: 1 });
+bookingSchema.index({ companyId: 1, loadingDate: -1 });
+bookingSchema.index({ companyId: 1, _id: 1 });
+bookingSchema.index({ companyId: 1, bookingDate: -1, _id: -1 });
+bookingSchema.index({ companyId: 1, bookingType: 1, bookingDate: 1, _id: 1 });
 
 const userSchema = new mongoose.Schema({
   companyId: {
@@ -153,7 +159,7 @@ const deliverySchema = new mongoose.Schema({
     ref: "Company",
     required: true,
   },
-   bookingId: {   
+   bookingId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Booking",
     required: true

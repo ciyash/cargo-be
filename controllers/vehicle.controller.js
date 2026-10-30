@@ -1,3 +1,4 @@
+import { writableFields } from "../utils/update-fields.js";
 import Vehicle from '../models/vehicle.model.js';
 
 // Create a new vehicle
@@ -86,7 +87,7 @@ const updateVehicle = async (req, res) => {
 
         const vehicle = await Vehicle.findOneAndUpdate(
             { _id: id, companyId },
-            req.body,
+            { $set: writableFields(req.body) },
             { new: true, runValidators: true }
         );
 

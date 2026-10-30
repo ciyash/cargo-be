@@ -1,3 +1,5 @@
+import { escapeRegex } from "../utils/api-error.js";
+import { writableFields } from "../utils/update-fields.js";
 import Charge from "../models/extra.charge.model.js";
 
 // Create a new charge
@@ -49,7 +51,7 @@ const createCharge = async (req, res) => {
 const getAllExtraCharge = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    
+
     const charges = await Charge.find({ companyId });
     if (charges.length === 0) {
       return res
@@ -60,7 +62,7 @@ const getAllExtraCharge = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-};  
+};
 
 // Get charges from city to city for the compa
 const getChargeFromCityToCity = async (req, res) => {
@@ -76,8 +78,8 @@ const getChargeFromCityToCity = async (req, res) => {
 
     const charges = await Charge.find({
       companyId,
-      fromCity: { $regex: new RegExp(`^${fromCity}$`, "i") },
-      toCity: { $regex: new RegExp(`^${toCity}$`, "i") }
+      fromCity: { $regex: new RegExp(`^${escapeRegex(fromCity)}$`, "i") },
+      toCity: { $regex: new RegExp(`^${escapeRegex(toCity)}$`, "i") }
     });
 
     if (charges.length === 0) {
@@ -117,7 +119,7 @@ const updateChargeById = async (req, res) => {
   try {
     const { id } = req.params;
     const companyId = req.user?.companyId;
-    const updateData = req.body;
+    const updateData = writableFields(req.body);
 
     const updatedCharge = await Charge.findOneAndUpdate(
       { _id: id, companyId },

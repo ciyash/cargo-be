@@ -1,3 +1,4 @@
+import { writableFields } from "../utils/update-fields.js";
 import { Asset } from '../models/multi.model.js';
 
 const createAsset = async (req, res) => {
@@ -70,7 +71,7 @@ const updateAsset = async (req, res) => {
     // Ensure update only if asset belongs to this company
     const updatedAsset = await Asset.findOneAndUpdate(
       { _id: id, companyId },
-      req.body,
+      { $set: writableFields(req.body) },
       { new: true }
     );
 

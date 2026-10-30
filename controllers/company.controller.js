@@ -1,12 +1,21 @@
 import Company from "../models/company.model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { logoMime } from '../utils/company-branding.js';
+
+// Public registration always creates an independent company.
+const registerCompany = (req, res) => {
+  req.body = { ...req.body, parentCompanyId: null };
+  return registerSubsidiaryCompany(req, res);
+};
 
 
 // Register Subsidiary
 const registerSubsidiaryCompany = async (req, res) => {
   try {
-    const {
+    if (req.body.logoText !== undefined && (typeof req.body.logoText !== 'string' || (req.body.logoText.trim() !== '' && !/^[a-z]{2}$/i.test(req.body.logoText.trim())))) return res.status(400).json({ message: 'Enter exactly two letters for the logo, or leave blank to use company initials' });
+    if (req.file && !logoMime(req.file.buffer)) return res.status(400).json({ message: 'Upload a PNG, JPEG or WebP company logo up to 5 MB' });
+    let {
       name,
       email,
       password,
@@ -16,6 +25,13 @@ const registerSubsidiaryCompany = async (req, res) => {
       state,
       customerName
     } = req.body;
+
+    if (typeof name !== "string" || !name.trim() ||
+        typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ||
+        typeof password !== "string" || password.length < 8) {
+      return res.status(400).json({ message: "Company name, valid email and password of at least 8 characters are required" });
+    }
+    email = email.trim().toLowerCase();
 
     //  const logo = req.file.buffer.toString("base64");
      const logo = req.file ? req.file.buffer.toString("base64") : "";
@@ -27,6 +43,7 @@ const registerSubsidiaryCompany = async (req, res) => {
     const hashed = await bcrypt.hash(password, 10);
 
     const newCompany = await Company.create({
+      logoText: req.body.logoText?.trim() || '',
       name,
       email,
       password: hashed,
@@ -42,25 +59,32 @@ const registerSubsidiaryCompany = async (req, res) => {
       }
     });
 
-    res.status(201).json({ msg: "Subsidiary registered", company: newCompany });
+    res.status(201).json({ msg: parentCompanyId ? "Subsidiary registered" : "Company registered successfully", company: newCompany });
   } catch (err) {
+    if (err.code === 11000) return res.status(409).json({ message: "Company already exists" });
     res.status(500).json({ error: err.message });
   }
 };
 
-// 
+//
 
 const loginCompany = async (req, res) => {
   try {
+    if (req.body.companyId !== undefined && (typeof req.body.companyId !== 'string' || !/^[a-f0-9]{24}$/i.test(req.body.companyId))) return res.status(400).json({ message: 'Invalid company login link' });
     const { email, password } = req.body;
-    const ipAddress = req.ip || req.connection.remoteAddress;
+    if (typeof email !== "string" || !email.trim() || typeof password !== "string" || !password) {
+      return res.status(400).json({ message: "Email and password are required" });
+    }
+    const ipAddress = req.ip || req.connection?.remoteAddress;
 
     // Check if company exists
-    const company = await Company.findOne({ email }).populate("parentCompany", "name email");
+    const company = await Company.findOne({ email: email.trim().toLowerCase() }).populate("parentCompany", "name email");
 
     if (!company) {
       return res.status(404).json({ message: "Company not found" });
     }
+
+    if (req.body.companyId && String(company._id) !== req.body.companyId.toLowerCase()) return res.status(401).json({ message: 'These credentials do not belong to this company login page' });
 
     // Check password
     const isMatch = await bcrypt.compare(password, company.password);
@@ -87,6 +111,7 @@ const loginCompany = async (req, res) => {
     const tokenPayload = {
       companyId: company._id.toString(),
       email: company.email,
+      role: "company",
       shopGlobalId,
     };
 
@@ -97,7 +122,8 @@ const loginCompany = async (req, res) => {
 
     res.status(200).json({
       message: "Company logged in successfully",
-      token
+      token,
+      company
     });
   } catch (err) {
     console.error("Login error:", err.message);
@@ -108,12 +134,15 @@ const loginCompany = async (req, res) => {
 
 const updateCompany = async (req, res) => {
   try {
+    if (req.body.logoText !== undefined && (typeof req.body.logoText !== 'string' || (req.body.logoText.trim() !== '' && !/^[a-z]{2}$/i.test(req.body.logoText.trim())))) return res.status(400).json({ message: 'Enter exactly two letters for the logo, or leave blank to use company initials' });
+    if (req.file && !logoMime(req.file.buffer)) return res.status(400).json({ message: 'Upload a PNG, JPEG or WebP company logo up to 5 MB' });
     const authHeader = req.headers.authorization;
     const token = authHeader?.split(" ")[1];
     const decoded = jwt.verify(token, process.env.COMPANY_SECRET);
     const id = decoded.companyId; // extract from token
 
-    const updateData = { ...req.body };
+    const editable = ['name', 'email', 'password', 'phone', 'address', 'state', 'customerName', 'logoText'];
+    const updateData = Object.fromEntries(editable.filter(key => key in req.body).map(key => [key, req.body[key]]));
 
     // ✅ Handle password hashing if password is being updated
     if (updateData.password) {
@@ -148,7 +177,7 @@ const updateCompany = async (req, res) => {
 
 const getAllCompanies = async (req, res) => {
   try {
-    const companies = await Company.find();
+    const companies = await Company.find({ $or: [{ _id: req.user.companyId }, { parentCompany: req.user.companyId }] });
     if (!companies || companies.length === 0) {
       return res.status(404).json({ msg: "No companies found" });
     }
@@ -277,7 +306,7 @@ const checkCompanyAccess = async (req, res, next) => {
       return res.status(403).json({ message: "Access denied. Company is blocked." });
     }
 
-    next(); // ✅ Allow to proceed
+    return res.status(200).json({ message: "Company access granted", allowed: true });
   } catch (error) {
     console.error("Access check error:", error.message);
     res.status(500).json({ message: "Server error" });
@@ -289,6 +318,7 @@ const checkCompanyAccess = async (req, res, next) => {
 const getSubsidiaries = async (req, res) => {
   try {
     const { parentCompanyId } = req.params;
+    if (parentCompanyId !== req.user.companyId) return res.status(403).json({ message: "Company access denied" });
     const subsidiaries = await Company.find({ parentCompany: parentCompanyId });
     res.json({ subsidiaries });
   } catch (err) {
@@ -341,7 +371,7 @@ const deleteCompany = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const company = await Company.findByIdAndDelete(id);
+    const company = await Company.findOneAndDelete({ _id: id, $or: [{ _id: req.user.companyId }, { parentCompany: req.user.companyId }] });
     if (!company) {
       return res.status(404).json({ msg: "Company not found" });
     }
@@ -371,6 +401,7 @@ const checkMembershipStatus = async (req, res) => {
 };
 
 export default {
+  registerCompany,
   registerSubsidiaryCompany,
   loginCompany,
   getAllCompanies,
@@ -382,4 +413,3 @@ export default {
   updateCompany,
   checkCompanyAccess
 };
-     

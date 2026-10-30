@@ -1,3 +1,11 @@
+import { saveBillableBooking, billingStatus } from '../services/billing.js';
+import { reportDayStart, reportDayEnd } from '../utils/report-input.js';
+import { sendReport, sendEmptyReport, queryReportPage, sendReportPage, getReportPagination, queryGroupedReportPage, paginationMetadata } from "../utils/report-pagination.js";
+import { deliverBooking } from "../services/delivery-workflow.js";
+import { sendError } from "../utils/api-error.js";
+import { escapeRegex } from "../utils/api-error.js";
+import { writableFields } from "../utils/update-fields.js";
+import { nextSequence } from "../services/sequence.js";
 import { User, Booking, Delivery } from "../models/booking.model.js";
 import CFMaster from "../models/cf.master.model.js";
 import Company from "../models/company.model.js";
@@ -14,7 +22,7 @@ const generateGrnNumber = async (companyId) => {
     .select("grnNo");
 
   const lastGrn = lastBooking?.grnNo;
-  return typeof lastGrn === "number" ? lastGrn + 1 : 1000;
+  return nextSequence(`grn:${companyId}`, typeof lastGrn === "number" ? lastGrn : 999);
 };
 
 // Helper to extract 2-letter initialsss (smart fallback)
@@ -52,7 +60,7 @@ const getFinancialYearRange = () => {
 };
 
 // Main LR generator
-const generateLrNumber = async (fromCity, location, companyId, companyName) => {
+const generateLrNumber = async (fromCity, location, companyId, companyName, grnNumber) => {
   try {
     if (!companyId || !companyName) {
       throw new Error("Missing companyId or companyName in generateLrNumber");
@@ -88,10 +96,10 @@ const generateLrNumber = async (fromCity, location, companyId, companyName) => {
       }
     }
 
+    sequenceNumber = await nextSequence(`lr:${companyId}:${lrPrefix}:${start.getUTCFullYear()}`, sequenceNumber - 1);
     const formattedSequence = String(sequenceNumber).padStart(4, "0");
 
     // GRN number fetch (you must already have this function defined)
-    const grnNumber = await generateGrnNumber(companyId);
     const formattedGrn = String(grnNumber).padStart(4, "0");
 
     // Final LR Number
@@ -121,7 +129,7 @@ const generateEWayBillNo = async () => {
     }
 
     // Format sequence (01, 02, 03...)
-    const formattedSequence = String(sequenceNumber).padStart(2, "0");
+    const formattedSequence = String(await nextSequence(`eway:${today}`, sequenceNumber - 1)).padStart(2, "0");
 
     return `EWB${formattedSequence}${today}`;
   } catch (error) {
@@ -131,7 +139,7 @@ const generateEWayBillNo = async () => {
 
 const generateReceiptNumber = async () => {
   const lastBooking = await Booking.findOne().sort({ receiptNo: -1 }).lean();
-  return (lastBooking?.receiptNo || 0) + 1; // If no booking exists, start from 1
+  return nextSequence("receipt", lastBooking?.receiptNo || 0); // If no booking exists, start from 1
 };
 
 const sanitizeInput = (input) => {
@@ -139,28 +147,6 @@ const sanitizeInput = (input) => {
     return input.trim().replace(/[<>&'"]/g, "");
   }
   return input;
-};
-
-const checkMembership = async (user) => {
-  if (!user?.companyId) {
-    // console.log("User does not have companyId");
-    return false;
-  }
-
-  const company = await Company.findById(user.companyId).lean();
-  if (!company) {
-    // console.log("Company not found");
-    return false;
-  }
-
-  const { startDate, validTill } = company.subscription || {};
-  if (!startDate || !validTill) {
-    console.log("Subscription dates missing");
-    return false;
-  }
-
-  const now = new Date();
-  return new Date(startDate) <= now && now <= new Date(validTill);
 };
 
 const createBooking = async (req, res) => {
@@ -172,42 +158,9 @@ const createBooking = async (req, res) => {
       });
     }
 
-    // --- Membership check ---
-    const hasActiveMembership = await checkMembership(req.user);
-    if (!hasActiveMembership) {
-      return res.status(403).json({
-        success: false,
-        message: "Company membership expired or inactive. Booking not allowed.",
-      });
-    }
-
-    // --- Booking limit check ---
-    const company = await Company.findById(req.user.companyId);
-    if (!company || !company.subscription?.validTill) {
-      return res.status(403).json({
-        message: "Subscription expired or not active. Booking not allowed.",
-      });
-    }
-
-    const { startDate, validTill } = company.subscription;
-    const limit = company.bookingLimit || 1000;
-
-    // Normalize date range
-    const start = new Date(startDate);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(validTill);
-    end.setHours(23, 59, 59, 999);
-
-    const currentBookingCount = await Booking.countDocuments({
-      companyId: req.user.companyId,
-      bookingDate: { $gte: start, $lte: end },
-    });
-
-    if (currentBookingCount >= limit) {
-      return res.status(403).json({
-        message: `Booking limit reached (${limit}). Please upgrade plan or wait.`,
-      });
-    }
+    const access = await billingStatus(req.user.companyId);
+    if (access.blocked) return res.status(403).json({ message: 'Company is blocked' });
+    if (!access.canBook) return res.status(402).json({ code: 'PAYMENT_REQUIRED', message: '100 free bookings completed. Company owner must upgrade to INR 1,000/month for unlimited bookings.' });
 
     // --- Input sanitization ---
     const {
@@ -291,8 +244,8 @@ const createBooking = async (req, res) => {
     }
 
     const [pickUpBranchdata, dropBranchdata] = await Promise.all([
-      Branch.findOne({ branchUniqueId: pickUpBranch }).lean(),
-      Branch.findOne({ branchUniqueId: dropBranch }).lean(),
+      Branch.findOne({ branchUniqueId: pickUpBranch, companyId: req.user.companyId }).lean(),
+      Branch.findOne({ branchUniqueId: dropBranch, companyId: req.user.companyId }).lean(),
     ]);
 
     if (!pickUpBranchdata || !dropBranchdata) {
@@ -310,15 +263,15 @@ const createBooking = async (req, res) => {
     const bookingStatus = 0;
     const adminUniqueId = req.user.subadminUniqueId;
 
-    const [grnNo, lrNumber, eWayBillNo, generatedReceiptNo] = await Promise.all(
-      [
-        generateGrnNumber(companyId),
-        generateLrNumber(fromCity, location, companyId, companyName),
-        generateEWayBillNo(),
-        generateReceiptNumber(),
-      ]
-    );
+    const [grnNo, eWayBillNo, generatedReceiptNo] = await Promise.all([
+      generateGrnNumber(companyId), generateEWayBillNo(), generateReceiptNumber(),
+    ]);
+    const lrNumber = await generateLrNumber(fromCity, location, companyId, companyName, grnNo);
 
+    if (!Array.isArray(packages) || !packages.length || packages.length > 1000 || packages.some(pkg => !pkg || typeof pkg !== 'object' || !Number.isFinite(Number(pkg.quantity)) || Number(pkg.quantity) <= 0 || !Number.isFinite(Number(pkg.unitPrice)) || Number(pkg.unitPrice) < 0 || !Number.isFinite(Number(pkg.totalPrice)) || Number(pkg.totalPrice) < 0)) {
+      return res.status(400).json({ message: 'Provide valid packages with positive quantities and non-negative prices' });
+    }
+    if (!Number.isFinite(Number(grandTotal)) || Number(grandTotal) < 0) return res.status(400).json({ message: 'grandTotal must be non-negative' });
     const totalQuantity = packages.reduce(
       (sum, pkg) => sum + Number(pkg.quantity || 0),
       0
@@ -370,8 +323,7 @@ const createBooking = async (req, res) => {
       bookedBy,
       items,
       eWayBillNo,
-      vehicleNumber,
-      actualWeight,
+      vehicalNumber: vehicleNumber,
       bookingDate: new Date(),
       bookbranchid: pickUpBranchId,
       pickUpBranchname,
@@ -379,7 +331,7 @@ const createBooking = async (req, res) => {
       toPayDeliveredAmount,
     });
 
-    const savedBooking = await booking.save();
+    const savedBooking = await saveBillableBooking(booking);
 
     // Save users
     if (savedBooking) {
@@ -428,8 +380,7 @@ const createBooking = async (req, res) => {
       data: booking,
     });
   } catch (error) {
-    console.log("Booking Error:", error.message);
-    return res.status(500).json({ error: error.message });
+    return sendError(res, error);
   }
 };
 
@@ -504,15 +455,15 @@ const getAllBookingsPages = async (req, res) => {
       filter.fromCity = branchCity;
     }
 
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(500, Math.max(1, parseInt(req.query.limit, 10) || 10));
     const skip = (page - 1) * limit;
 
     const totalBookings = await Booking.countDocuments(filter);
     const totalPages = Math.ceil(totalBookings / limit);
 
     const bookings = await Booking.find(filter)
-      .populate("bookedBy")
+      .populate("bookedBy", "name username role")
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 });
@@ -729,7 +680,7 @@ const updateBookings = async (req, res) => {
     }
 
     const { id } = req.params;
-    const update = { ...req.body };
+    const update = writableFields(req.body);
 
     // ❌ Prevent updates to immutable/sensitive fields
     delete update._id;
@@ -739,7 +690,7 @@ const updateBookings = async (req, res) => {
     // 🔍 If pickUpBranch is updated, update pickUpBranchname too
     if (update.pickUpBranch) {
       const branch = await Branch.findOne({
-        branchUniqueId: update.pickUpBranch,
+        branchUniqueId: update.pickUpBranch, companyId,
       });
       if (!branch) {
         return res.status(404).json({ message: "Invalid pickUpBranch ID" });
@@ -750,7 +701,7 @@ const updateBookings = async (req, res) => {
     // 🔍 If dropBranch is updated, update dropBranchname too
     if (update.dropBranch) {
       const branch = await Branch.findOne({
-        branchUniqueId: update.dropBranch,
+        branchUniqueId: update.dropBranch, companyId,
       });
       if (!branch) {
         return res.status(404).json({ message: "Invalid dropBranch ID" });
@@ -787,7 +738,7 @@ const updateGRNBookings = async (req, res) => {
         .json({ success: false, message: "Unauthorized: Company ID missing" });
     }
     const { grnNo } = req.params;
-    const update = req.body;
+    const update = writableFields(req.body);
 
     const booking = await Booking.findOneAndUpdate(
       { grnNo, companyId },
@@ -837,18 +788,19 @@ const updateAllGrnNumbers = async (req, res) => {
     }
 
     // Append updated timestamp
-    updateFields.updatedAt = new Date();
+    const safeUpdates = writableFields(updateFields);
+    safeUpdates.updatedAt = new Date();
 
     // Query filter including company scope
     const query = {
-      grnNumber: { $in: grnNumbers },
+      grnNo: { $in: grnNumbers },
       companyId,
     };
 
     const beforeUpdate = await Booking.find(query);
 
     const updateResult = await Booking.updateMany(query, {
-      $set: updateFields,
+      $set: safeUpdates,
     });
 
     const afterUpdate = await Booking.find(query);
@@ -934,7 +886,7 @@ const getBookingsByAnyField = async (req, res) => {
 
     // Add customer name condition (regex match on sender or receiver name)
     if (searchCustomer) {
-      const nameRegex = new RegExp(searchCustomer, "i");
+      const nameRegex = new RegExp(escapeRegex(searchCustomer), "i");
       orConditions.push({ senderName: nameRegex }, { receiverName: nameRegex });
     }
 
@@ -945,7 +897,7 @@ const getBookingsByAnyField = async (req, res) => {
 
     // Add lrNumber condition (exact or regex match)
     if (lrNumber) {
-      const lrRegex = new RegExp(lrNumber, "i");
+      const lrRegex = new RegExp(escapeRegex(lrNumber), "i");
       orConditions.push({ lrNumber: lrRegex });
     }
 
@@ -1104,7 +1056,7 @@ const getUsersBySearch = async (req, res) => {
       });
     }
 
-    const searchRegex = new RegExp(query, "i");
+    const searchRegex = new RegExp(escapeRegex(query), "i");
 
     // Step 1: Search Users belonging to the same company
     const users = await User.find({
@@ -1311,96 +1263,10 @@ const getCreditBookings = async (req, res) => {
 
 const deliveryBooking = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
-    const deliveryEmployee = req.user?.name;
-    const deliveryBranch = req.user?.branchId;
-    const deliveryCity = req.user?.branchCity;
-    const deliveryBranchId = req.user?.branchUniqueId;
-    const deliveryBranchName = req.user?.branchName;
-
-    if (!companyId) {
-      return res
-        .status(401)
-        .json({ success: false, message: "Unauthorized: Company ID missing" });
-    }
-
-    const { grnNo, receiverName, receiverMobile, toPayDeliveredAmount } =
-      req.body;
-
-    if (
-      !grnNo ||
-      !receiverName ||
-      !receiverMobile ||
-      isNaN(toPayDeliveredAmount)
-    ) {
-      return res
-        .status(400)
-        .json({ message: "Missing or invalid required fields!" });
-    }
-
-    const booking = await Booking.findOne({ grnNo, companyId });
-    if (!booking)
-      return res.status(404).json({ message: "Booking not found!" });
-
-    if (booking.bookingStatus === 4)
-      return res.status(400).json({ message: "Parcel already received!" });
-    if (booking.bookingStatus !== 2)
-      return res.status(400).json({ message: "Unloading not completed!" });
-
-    if (booking.unloadingBranch !== deliveryBranch) {
-      return res.status(403).json({
-        message: "This parcel was unloaded at a different branch.",
-        unloadingBranch: booking.unloadingBranchname,
-        yourBranch: deliveryBranchName,
-      });
-    }
-
-    const deliveryDate = new Date();
-
-    const newDelivery = new Delivery({
-      companyId,
-      bookingId: booking._id,
-      grnNo,
-      receiverName,
-      receiverMobile,
-      deliveryDate,
-      toPayDeliveredAmount,
-      deliveryEmployee,
-      deliveryBranch,
-      deliveryCity,
-      deliveryBranchName,
-      bookingType: booking.bookingType, // use from booking
-    });
-
-    await newDelivery.save();
-
-    booking.bookingStatus = 4;
-    booking.deliveryDate = deliveryDate;
-    booking.deliveryEmployee = deliveryEmployee;
-    booking.deliveryBranch = deliveryBranch;
-    booking.deliveryBranchName = deliveryBranchName;
-    booking.deliveryCity = deliveryCity;
-    booking.receiverName = receiverName;
-    booking.receiverMobile = receiverMobile;
-    booking.toPayDeliveredAmount = toPayDeliveredAmount;
-
-    if (booking.bookingType === "toPay") {
-      booking.toPayCollectedBranch = deliveryBranchId;
-    }
-
-    await booking.save({ validateModifiedOnly: true });
-
-    return res.status(200).json({
-      success: true,
-      message: "Booking received successfully",
-      booking,
-    });
-  } catch (error) {
-    console.error("Error in deliveryBooking:", error);
-    return res.status(500).json({ success: false, error: error.message });
-  }
+    const booking = await deliverBooking(req.body, req.user);
+    return res.status(200).json({ success: true, message: 'Booking received successfully', booking });
+  } catch (error) { return sendError(res, error); }
 };
-
 const getAllDeliveries = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
@@ -1425,15 +1291,15 @@ const getAllDeliveries = async (req, res) => {
 const updateDelivery = async (req, res) => {
   try {
     const { id } = req.params; // from route like /delivery/:deliveryId
-    const updateFields = req.body; // contains fields to update
+    const safeUpdates = writableFields(req.body);
 
     if (!id) {
       return res.status(400).json({ message: "Delivery ID is required" });
     }
 
-    const updatedDelivery = await Delivery.findByIdAndUpdate(
-      id,
-      { $set: updateFields },
+    const updatedDelivery = await Delivery.findOneAndUpdate(
+      { _id: id, companyId: req.user.companyId },
+      { $set: safeUpdates },
       { new: true } // return updated document
     );
 
@@ -1526,6 +1392,8 @@ const cancelBooking = async (req, res) => {
 };
 
 const parcelBookingReports = async (req, res) => {
+  let databasePagination;
+  const report = payload => sendReportPage(res, payload, databasePagination);
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
@@ -1555,8 +1423,8 @@ const parcelBookingReports = async (req, res) => {
     const userRole = req.user.role;
     const userBranchId = req.user.branchId;
 
-    const fromDateTime = new Date(`${fromDate}T00:00:00.000Z`);
-    const toDateTime = new Date(`${toDate}T23:59:59.999Z`);
+    const fromDateTime = reportDayStart(fromDate);
+    const toDateTime = reportDayEnd(toDate);
 
     let query = {
       bookingDate: { $gte: fromDateTime, $lte: toDateTime },
@@ -1586,50 +1454,17 @@ const parcelBookingReports = async (req, res) => {
         : [bookingType]
       : ["paid", "credit", "toPay", "FOC", "CLR"];
 
-    const result = {};
-    let totalBookingsCount = 0; // <-- for checking if any data was found
-
-    await Promise.all(
-      bookingTypes.map(async (type) => {
-        const typeQuery = { ...query, bookingType: type };
-
-        const bookings = await Booking.find(typeQuery)
-          .sort({ bookingDate: -1 })
-          .select(
-            "grnNo bookingStatus bookedBy bookingDate pickUpBranchname dropBranchname senderName receiverName packages.weight packages.actulWeight totalQuantity grandTotal hamaliCharge valueOfGoods eWayBillNo"
-          )
-          .populate({
-            path: "bookedBy",
-            select: "name",
-          });
-
-        const allGrandTotal = bookings.reduce(
-          (sum, b) => sum + (b.grandTotal || 0),
-          0
-        );
-        const allTotalQuantity = bookings.reduce(
-          (sum, b) => sum + (b.totalQuantity || 0),
-          0
-        );
-
-        result[type] = {
-          bookings,
-          allGrandTotal,
-          allTotalQuantity,
-        };
-
-        totalBookingsCount += bookings.length;
-      })
-    );
-
-    if (totalBookingsCount === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "No bookings found for the given criteria.",
-      });
-    }
-
-    return res.status(200).json({
+    const page = await queryGroupedReportPage(Booking, query, bookingTypes, req, {
+      select: 'grnNo bookingType bookingStatus bookedBy bookingDate pickUpBranchname dropBranchname senderName receiverName packages totalPackages totalQuantity grandTotal hamaliCharges valueOfGoods eWayBillNo',
+      direction: -1,
+      populate: { path: 'bookedBy', select: 'name' },
+    });
+    databasePagination = page.pagination;
+    const result = page.data;
+    const finalGrandTotal = Object.values(result).reduce((sum, row) => sum + row.allGrandTotal, 0);
+    const finalTotalPackages = Object.values(result).reduce((sum, row) => sum + row.allTotalPackages, 0);
+    const finalTotalQuantity = Object.values(result).reduce((sum, row) => sum + row.allTotalQuantity, 0);
+    return report({
       success: true,
       data: result,
     });
@@ -1687,7 +1522,7 @@ const parcelBookingReports = async (req, res) => {
 //         ...extraFilter,
 //         bookingType: { $in: bookingTypes },
 //       })
-//         .sort({ [dateField]: -1 })
+//         .sort({ [dateField]: -1 , _id: 1 })
 //         .select(
 //           "grnNo bookingStatus bookedBy bookingDate pickUpBranchname dropBranchname senderName receiverName packages.weight packages.actulWeight totalQuantity grandTotal hamaliCharge valueOfGoods eWayBillNo bookingType"
 //         )
@@ -1759,7 +1594,7 @@ const parcelBookingReports = async (req, res) => {
 //     }
 
 //     if (!bookings || bookings.length === 0) {
-//       return res.status(404).json({
+//       return sendEmptyReport(req, res, {
 //         success: false,
 //         message: "No bookings found for the given criteria.",
 //       });
@@ -1785,7 +1620,7 @@ const parcelBookingReports = async (req, res) => {
 
 //     result = grouped;
 
-//     return res.status(200).json({
+//     return report({
 //       success: true,
 //       data: result,
 //     });
@@ -1801,6 +1636,7 @@ const parcelBookingReports = async (req, res) => {
 // };
 
 const allParcelBookingReport = async (req, res) => {
+  const report = payload => sendReport(req, res, payload, 'allParcelBookingReport');
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -1836,7 +1672,7 @@ const allParcelBookingReport = async (req, res) => {
       });
     }
 
-    if (new Date(startDate) > new Date(endDate)) {
+    if (reportDayStart(startDate) > reportDayEnd(endDate)) {
       return res.status(400).json({
         success: false,
         message: "startDate should be before or equal to endDate.",
@@ -1846,19 +1682,19 @@ const allParcelBookingReport = async (req, res) => {
     const query = {
       companyId,
       bookingDate: {
-        $gte: new Date(`${startDate}T00:00:00.000Z`),
-        $lte: new Date(`${endDate}T23:59:59.999Z`),
+        $gte: reportDayStart(startDate),
+        $lte: reportDayEnd(endDate),
       },
     };
 
     // Optional filters
-    if (fromCity) query.fromCity = { $regex: new RegExp(fromCity, "i") };
-    if (toCity) query.toCity = { $regex: new RegExp(toCity, "i") };
+    if (fromCity) query.fromCity = { $regex: new RegExp(escapeRegex(fromCity), "i") };
+    if (toCity) query.toCity = { $regex: new RegExp(escapeRegex(toCity), "i") };
     if (pickUpBranch)
-      query.pickUpBranch = { $regex: new RegExp(pickUpBranch, "i") };
-    if (dropBranch) query.dropBranch = { $regex: new RegExp(dropBranch, "i") };
+      query.pickUpBranch = { $regex: new RegExp(escapeRegex(pickUpBranch), "i") };
+    if (dropBranch) query.dropBranch = { $regex: new RegExp(escapeRegex(dropBranch), "i") };
     if (vehicalNumber)
-      query.vehicalNumber = { $regex: new RegExp(vehicalNumber, "i") };
+      query.vehicalNumber = { $regex: new RegExp(escapeRegex(vehicalNumber), "i") };
 
     if (
       bookingStatus !== undefined &&
@@ -1868,12 +1704,12 @@ const allParcelBookingReport = async (req, res) => {
       query.bookingStatus = Number(bookingStatus);
     }
 
-    const bookings = await Booking.find(query).select(
+    const bookings = await Booking.find(query).sort({ _id: 1 }).select(
       "grnNo bookingDate bookingStatus fromCity toCity bookingType pickUpBranchname dropBranchname senderName receiverName totalQuantity grandTotal hamaliCharges vehicalNumber"
     );
 
     if (bookings.length === 0) {
-      return res.status(404).json({
+      return sendEmptyReport(req, res, {
         success: false,
         message: "No bookings found matching the criteria.",
       });
@@ -1903,9 +1739,9 @@ const allParcelBookingReport = async (req, res) => {
       );
     });
 
-    const groupedResult = Object.values(vehicleGrouped);
+    const groupedResult = Object.values(vehicleGrouped).sort((a, b) => a.vehicalNumber.localeCompare(b.vehicalNumber));
 
-    res.status(200).json({
+    report({
       success: true,
       message: "Bookings grouped by vehicle number.",
       data: groupedResult,
@@ -1921,6 +1757,8 @@ const allParcelBookingReport = async (req, res) => {
 };
 
 const parcelReportSerialNo = async (req, res) => {
+  let databasePagination;
+  const report = payload => sendReportPage(res, payload, databasePagination);
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
@@ -1947,63 +1785,27 @@ const parcelReportSerialNo = async (req, res) => {
 
     if (fromDate && toDate) {
       query.bookingDate = {
-        $gte: new Date(fromDate + "T00:00:00.000Z"),
-        $lte: new Date(toDate + "T23:59:59.999Z"),
+        $gte: reportDayStart(fromDate),
+        $lte: reportDayEnd(toDate),
       };
     }
 
-    if (fromCity) query.fromCity = { $regex: new RegExp(fromCity, "i") };
-    if (toCity) query.toCity = { $regex: new RegExp(toCity, "i") };
+    if (fromCity) query.fromCity = { $regex: new RegExp(escapeRegex(fromCity), "i") };
+    if (toCity) query.toCity = { $regex: new RegExp(escapeRegex(toCity), "i") };
 
     const bookingTypes = ["paid", "credit", "toPay", "FOC", "CLR"];
 
-    const result = {};
-    let finalGrandTotal = 0;
-    let finalTotalPackages = 0;
-    let finalTotalQuantity = 0;
-    let hasAnyBooking = false;
-
-    for (const type of bookingTypes) {
-      const typeQuery = { ...query, bookingType: type };
-
-      const bookings = await Booking.find(typeQuery)
-        .sort({ bookingDate: 1 })
-        .select(
-          "grnNo bookingStatus bookedBy bookingDate pickUpBranchname dropBranchname totalPackages senderName receiverName packages totalQuantity grandTotal"
-        );
-
-      if (bookings.length > 0) hasAnyBooking = true;
-
-      let allGrandTotal = 0;
-      let allTotalPackages = 0;
-      let allTotalQuantity = 0;
-
-      bookings.forEach((b) => {
-        allGrandTotal += b.grandTotal || 0;
-        allTotalPackages += b.totalPackages || 0;
-        allTotalQuantity += b.totalQuantity || 0;
-      });
-
-      finalGrandTotal += allGrandTotal;
-      finalTotalPackages += allTotalPackages;
-      finalTotalQuantity += allTotalQuantity;
-
-      result[type] = {
-        bookings,
-        allGrandTotal,
-        allTotalPackages,
-        allTotalQuantity,
-      };
-    }
-
-    if (!hasAnyBooking) {
-      return res.status(404).json({
-        success: false,
-        message: "No bookings found for the given filters.",
-      });
-    }
-
-    return res.status(200).json({
+    const page = await queryGroupedReportPage(Booking, query, bookingTypes, req, {
+      select: 'grnNo bookingType bookingStatus bookedBy bookingDate pickUpBranchname dropBranchname senderName receiverName packages totalPackages totalQuantity grandTotal hamaliCharges valueOfGoods eWayBillNo',
+      direction: 1,
+      
+    });
+    databasePagination = page.pagination;
+    const result = page.data;
+    const finalGrandTotal = Object.values(result).reduce((sum, row) => sum + row.allGrandTotal, 0);
+    const finalTotalPackages = Object.values(result).reduce((sum, row) => sum + row.allTotalPackages, 0);
+    const finalTotalQuantity = Object.values(result).reduce((sum, row) => sum + row.allTotalQuantity, 0);
+    return report({
       success: true,
       data: result,
       finalSummary: {
@@ -2023,6 +1825,8 @@ const parcelReportSerialNo = async (req, res) => {
 };
 
 const parcelCancelReport = async (req, res) => {
+  let databasePagination;
+  const report = payload => sendReportPage(res, payload, databasePagination);
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
@@ -2043,8 +1847,8 @@ const parcelCancelReport = async (req, res) => {
     // Apply cancelDate filter
     let start, end;
     if (fromDate && toDate) {
-      start = new Date(fromDate);
-      end = new Date(toDate);
+      start = reportDayStart(fromDate);
+      end = reportDayEnd(toDate);
     } else {
       // Default: last 30 days
       end = new Date();
@@ -2065,28 +1869,30 @@ const parcelCancelReport = async (req, res) => {
 
     // Optional filters
     if (fromCity) {
-      query.fromCity = { $regex: new RegExp(fromCity, "i") };
+      query.fromCity = { $regex: new RegExp(escapeRegex(fromCity), "i") };
     }
     if (toCity) {
-      query.toCity = { $regex: new RegExp(toCity, "i") };
+      query.toCity = { $regex: new RegExp(escapeRegex(toCity), "i") };
     }
     if (bookingType) {
-      query.bookingType = { $regex: new RegExp(bookingType, "i") };
+      query.bookingType = { $regex: new RegExp(escapeRegex(bookingType), "i") };
     }
 
     // Debug query
     console.log("Cancel Report Query:", query);
 
     // Fetch bookings
-    const bookings = await Booking.find(query)
+    const page = await queryReportPage(Booking.find(query)
       .select(
         "bookingDate cancelDate fromCity toCity grnNo senderName receiverName totalQuantity grandTotal refundCharge refundAmount cancelByUser"
       )
-      .sort({ bookingDate: 1 })
-      .lean();
+      .sort({ bookingDate: 1 , _id: 1 })
+      .lean(), req, {"allGrandTotal":"$grandTotal","allTotalQuantity":"$totalQuantity"});
+    const bookings = page.rows;
+    databasePagination = page.pagination;
 
-    if (!bookings.length) {
-      return res.status(200).json({
+    if (!page.totals.totalRecords) {
+      return report({
         success: true,
         message: "No cancelled bookings found for the given criteria.",
         data: [],
@@ -2097,12 +1903,10 @@ const parcelCancelReport = async (req, res) => {
     }
 
     // Aggregate totals
-    let allTotalQuantity = 0;
-    let allGrandTotal = 0;
+    const allTotalQuantity = page.totals.allTotalQuantity;
+    const allGrandTotal = page.totals.allGrandTotal;
 
     const formattedData = bookings.map((b) => {
-      allTotalQuantity += b.totalQuantity || 0;
-      allGrandTotal += b.grandTotal || 0;
       return {
         bookingDate: b.bookingDate,
         cancelDate: b.cancelDate,
@@ -2119,11 +1923,11 @@ const parcelCancelReport = async (req, res) => {
       };
     });
 
-    return res.status(200).json({
+    return report({
       success: true,
       message: "Cancelled bookings fetched successfully.",
       data: formattedData,
-      count: bookings.length,
+      count: page.totals.totalRecords,
       allTotalQuantity,
       allGrandTotal,
     });
@@ -2138,6 +1942,8 @@ const parcelCancelReport = async (req, res) => {
 };
 
 const parcelBookingSummaryReport = async (req, res) => {
+  let databasePagination;
+  const report = payload => sendReportPage(res, payload, databasePagination);
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
@@ -2155,28 +1961,30 @@ const parcelBookingSummaryReport = async (req, res) => {
     // Date range filter
     if (fromDate && toDate) {
       query.bookingDate = {
-        $gte: new Date(fromDate + "T00:00:00.000Z"),
-        $lte: new Date(toDate + "T23:59:59.999Z"),
+        $gte: reportDayStart(fromDate),
+        $lte: reportDayEnd(toDate),
       };
     }
 
     // City filters
-    if (fromCity) query.fromCity = { $regex: new RegExp(`^${fromCity}$`, "i") };
-    if (toCity) query.toCity = { $regex: new RegExp(`^${toCity}$`, "i") };
+    if (fromCity) query.fromCity = { $regex: new RegExp(`^${escapeRegex(fromCity)}$`, "i") };
+    if (toCity) query.toCity = { $regex: new RegExp(`^${escapeRegex(toCity)}$`, "i") };
 
     // Optional branch filters
     if (pickUpBranch)
-      query.pickUpBranch = { $regex: new RegExp(`^${pickUpBranch}$`, "i") };
+      query.pickUpBranch = { $regex: new RegExp(`^${escapeRegex(pickUpBranch)}$`, "i") };
 
     if (dropBranch)
-      query.dropBranch = { $regex: new RegExp(`^${dropBranch}$`, "i") };
+      query.dropBranch = { $regex: new RegExp(`^${escapeRegex(dropBranch)}$`, "i") };
 
-    const bookings = await Booking.find(query).select(
+    const page = await queryReportPage(Booking.find(query).sort({ _id: 1 }).select(
       "bookingDate grnNo fromCity toCity hamaliCharges totalBookings pickUpBranch pickUpBranchname dropBranch totalPackages totalQuantity grandTotal"
-    );
+    ), req, {"totalPackages":"$totalPackages","totalQuantity":"$totalQuantity","totalAmount":"$grandTotal","totalHamaliCharges":"$hamaliCharges"});
+    const bookings = page.rows;
+    databasePagination = page.pagination;
 
-    if (bookings.length === 0) {
-      return res.status(200).json({
+    if (page.totals.totalRecords === 0) {
+      return report({
         success: true,
         message: "No customer bookings found.",
         data: [],
@@ -2184,20 +1992,10 @@ const parcelBookingSummaryReport = async (req, res) => {
     }
 
     // Summarize
-    const totalBookings = bookings.length;
-    let totalPackages = 0;
-    let totalQuantity = 0;
-    let totalAmount = 0;
-    let totalHamaliCharges = 0;
+    const totalBookings = page.totals.totalRecords;
+    const { totalPackages, totalQuantity, totalAmount, totalHamaliCharges } = page.totals;
 
-    bookings.forEach((b) => {
-      totalPackages += b.totalPackages || 0;
-      totalQuantity += b.totalQuantity || 0;
-      totalAmount += b.grandTotal || 0;
-      totalHamaliCharges += b.hamaliCharges || 0;
-    });
-
-    res.status(200).json({
+    report({
       success: true,
       message: "Parcel booking summary report generated.",
       summary: {
@@ -2252,26 +2050,26 @@ const parcelBookingSummaryReport = async (req, res) => {
 //     }
 
 //     // City filters (exact match, case-insensitive)
-//     if (fromCity) query.fromCity = { $regex: new RegExp(`^${fromCity}$`, "i") };
-//     if (toCity) query.toCity = { $regex: new RegExp(`^${toCity}$`, "i") };
+//     if (fromCity) query.fromCity = { $regex: new RegExp(`^${escapeRegex(fromCity)}$`, "i") };
+//     if (toCity) query.toCity = { $regex: new RegExp(`^${escapeRegex(toCity)}$`, "i") };
 
 //     // Branch filters
 //     // if (userRole === "employee") {
 //     //   query.pickUpBranch = userBranchId;
 //     // } else {
 //     //   if (pickUpBranch)
-//     //     query.pickUpBranch = { $regex: new RegExp(`^${pickUpBranch}$`, "i") };
+//     //     query.pickUpBranch = { $regex: new RegExp(`^${escapeRegex(pickUpBranch)}$`, "i") };
 //     // }
 
 //     if (dropBranch)
-//       query.dropBranch = { $regex: new RegExp(`^${dropBranch}$`, "i") };
+//       query.dropBranch = { $regex: new RegExp(`^${escapeRegex(dropBranch)}$`, "i") };
 
 //     const bookings = await Booking.find(query).select(
 //       "bookingDate grnNo fromCity toCity hamaliCharges totalBookings pickUpBranch pickUpBranchname dropBranch totalPackages totalQuantity grandTotal"
 //     );
 
-//     if (bookings.length === 0) {
-//       return res.status(200).json({
+//     if (page.totals.totalRecords === 0) {
+//       return report({
 //         success: true,
 //         message: "No customer bookings found.",
 //         data: [],
@@ -2290,7 +2088,7 @@ const parcelBookingSummaryReport = async (req, res) => {
 //       totalAmount += b.grandTotal || 0;
 //     });
 
-//     res.status(200).json({
+//     report({
 //       success: true,
 //       message: "Parcel booking summary report generated.",
 //       summary: {
@@ -2374,13 +2172,13 @@ const parcelBookingSummaryReport = async (req, res) => {
 //     const finalQuery = query.length ? { $and: query } : {};
 
 //     const bookings = await Booking.find(finalQuery)
-//       .sort({ bookingDate: 1 })
+//       .sort({ bookingDate: 1 , _id: 1 })
 //       .select(
 //         "grnNo lrNumber bookingDate pickUpBranchname fromCity toCity senderName senderMobile receiverName receiverMobile deliveryDate bookingType totalQuantity grandTotal"
 //       );
 
-//     if (!bookings.length) {
-//       return res.status(200).json({
+//     if (!page.totals.totalRecords) {
+//       return report({
 //         success: true,
 //         message: "No customer bookings found.",
 //         data: [],
@@ -2399,11 +2197,11 @@ const parcelBookingSummaryReport = async (req, res) => {
 //       0
 //     );
 
-//     res.status(200).json({
+//     report({
 //       success: true,
 //       message: "Bookings filtered by mobile fetched successfully.",
 //       data: bookings,
-//       count: bookings.length,
+//       count: page.totals.totalRecords,
 //       allGrandTotal,
 //       allTotalQuantity,
 //     });
@@ -2418,6 +2216,8 @@ const parcelBookingSummaryReport = async (req, res) => {
 // };
 
 const parcelBookingMobileNumber = async (req, res) => {
+  let databasePagination;
+  const report = payload => sendReportPage(res, payload, databasePagination);
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
@@ -2450,19 +2250,19 @@ const parcelBookingMobileNumber = async (req, res) => {
     if (fromDate && toDate) {
       query.push({
         bookingDate: {
-          $gte: new Date(`${fromDate}T00:00:00.000Z`),
-          $lte: new Date(`${toDate}T23:59:59.999Z`),
+          $gte: reportDayStart(fromDate),
+          $lte: reportDayEnd(toDate),
         },
       });
     }
 
     // Optional filters
     if (fromCity) {
-      query.push({ fromCity: { $regex: new RegExp(fromCity, "i") } });
+      query.push({ fromCity: { $regex: new RegExp(escapeRegex(fromCity), "i") } });
     }
 
     if (pickUpBranch) {
-      query.push({ pickUpBranch: { $regex: new RegExp(pickUpBranch, "i") } });
+      query.push({ pickUpBranch: { $regex: new RegExp(escapeRegex(pickUpBranch), "i") } });
     }
 
     if (bookingType) {
@@ -2493,14 +2293,16 @@ const parcelBookingMobileNumber = async (req, res) => {
 
     const finalQuery = query.length ? { $and: query } : {};
 
-    const bookings = await Booking.find(finalQuery)
-      .sort({ bookingDate: 1 })
+    const page = await queryReportPage(Booking.find(finalQuery)
+      .sort({ bookingDate: 1 , _id: 1 })
       .select(
         "grnNo lrNumber bookingDate pickUpBranchname fromCity toCity senderName senderMobile receiverName receiverMobile deliveryDate bookingType totalQuantity grandTotal"
-      );
+      ), req, {"allGrandTotal":"$grandTotal","allTotalQuantity":"$totalQuantity"});
+    const bookings = page.rows;
+    databasePagination = page.pagination;
 
-    if (!bookings.length) {
-      return res.status(200).json({
+    if (!page.totals.totalRecords) {
+      return report({
         success: true,
         message: "No customer bookings found.",
         data: [],
@@ -2510,20 +2312,14 @@ const parcelBookingMobileNumber = async (req, res) => {
       });
     }
 
-    const allGrandTotal = bookings.reduce(
-      (sum, b) => sum + (b.grandTotal || 0),
-      0
-    );
-    const allTotalQuantity = bookings.reduce(
-      (sum, b) => sum + (b.totalQuantity || 0),
-      0
-    );
+    const allGrandTotal = page.totals.allGrandTotal;
+    const allTotalQuantity = page.totals.allTotalQuantity;
 
-    res.status(200).json({
+    report({
       success: true,
       message: "Bookings filtered by mobile fetched successfully.",
       data: bookings,
-      count: bookings.length,
+      count: page.totals.totalRecords,
       allGrandTotal,
       allTotalQuantity,
     });
@@ -2538,6 +2334,8 @@ const parcelBookingMobileNumber = async (req, res) => {
 };
 
 const regularCustomerBooking = async (req, res) => {
+  let databasePagination;
+  const report = payload => sendReportPage(res, payload, databasePagination);
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
@@ -2563,8 +2361,8 @@ const regularCustomerBooking = async (req, res) => {
     // Date filter
     if (fromDate && toDate) {
       query.bookingDate = {
-        $gte: new Date(fromDate + "T00:00:00.000Z"),
-        $lte: new Date(toDate + "T23:59:59.999Z"),
+        $gte: reportDayStart(fromDate),
+        $lte: reportDayEnd(toDate),
       };
     }
 
@@ -2577,19 +2375,21 @@ const regularCustomerBooking = async (req, res) => {
     // Name filter
     if (name) {
       query.$or = [
-        { senderName: { $regex: new RegExp(name, "i") } },
-        { receiverName: { $regex: new RegExp(name, "i") } },
+        { senderName: { $regex: new RegExp(escapeRegex(name), "i") } },
+        { receiverName: { $regex: new RegExp(escapeRegex(name), "i") } },
       ];
     }
 
-    const bookings = await Booking.find(query)
-      .sort({ bookingDate: 1 })
+    const page = await queryReportPage(Booking.find(query)
+      .sort({ bookingDate: 1 , _id: 1 })
       .select(
         "fromCity pickUpBranchname toCity dropBranchname bookingDate senderName receiverName senderMobile grandTotal totalQuantity"
-      );
+      ), req, {"allGrandTotal":"$grandTotal","allTotalQuantity":"$totalQuantity"});
+    const bookings = page.rows;
+    databasePagination = page.pagination;
 
-    if (!bookings.length) {
-      return res.status(200).json({
+    if (!page.totals.totalRecords) {
+      return report({
         success: true,
         message: "No customer bookings found.",
         data: [],
@@ -2599,20 +2399,14 @@ const regularCustomerBooking = async (req, res) => {
       });
     }
 
-    const allGrandTotal = bookings.reduce(
-      (sum, b) => sum + (b.grandTotal || 0),
-      0
-    );
-    const allTotalQuantity = bookings.reduce(
-      (sum, b) => sum + (b.totalQuantity || 0),
-      0
-    );
+    const allGrandTotal = page.totals.allGrandTotal;
+    const allTotalQuantity = page.totals.allTotalQuantity;
 
-    res.status(200).json({
+    report({
       success: true,
       message: "Regular customer bookings fetched successfully.",
       data: bookings,
-      count: bookings.length,
+      count: page.totals.totalRecords,
       allGrandTotal,
       allTotalQuantity,
     });
@@ -2627,6 +2421,7 @@ const regularCustomerBooking = async (req, res) => {
 };
 
 const branchWiseCollectionReport = async (req, res) => {
+  const report = payload => sendReport(req, res, payload, 'branchWiseCollectionReport');
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
@@ -2644,9 +2439,8 @@ const branchWiseCollectionReport = async (req, res) => {
         .json({ error: "fromDate and toDate are required" });
     }
 
-    const start = new Date(fromDate);
-    const end = new Date(toDate);
-    end.setHours(23, 59, 59, 999);
+    const start = reportDayStart(fromDate);
+    const end = reportDayEnd(toDate);
     if (isNaN(start) || isNaN(end)) {
       return res.status(400).json({ error: "Invalid date format" });
     }
@@ -2657,7 +2451,7 @@ const branchWiseCollectionReport = async (req, res) => {
     };
     if (fromCity) filter.fromCity = fromCity;
     if (pickUpBranch) filter.pickUpBranch = pickUpBranch;
-    if (bookedBy) filter.bookedBy = bookedBy;
+    if (bookedBy) filter.bookedBy = new mongoose.Types.ObjectId(bookedBy);
 
     const reportData = await Booking.aggregate([
       { $match: filter },
@@ -2715,7 +2509,7 @@ const branchWiseCollectionReport = async (req, res) => {
     ]);
 
     if (!reportData.length) {
-      return res.status(404).json({ message: "No bookings found." });
+      return sendEmptyReport(req, res, { message: "No bookings found." });
     }
 
     const totals = reportData.reduce(
@@ -2728,7 +2522,7 @@ const branchWiseCollectionReport = async (req, res) => {
       { finalGrandTotal: 0, finalCancelAmount: 0, finalTotalQty: 0 }
     );
 
-    res.status(200).json({
+    report({
       branches: reportData,
       totals,
     });
@@ -2743,6 +2537,7 @@ const branchWiseCollectionReport = async (req, res) => {
 //for summary for details report working
 
 const collectionforSummaryReport = async (req, res) => {
+  const report = payload => sendReport(req, res, payload, 'collectionforSummaryReport');
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
@@ -2760,9 +2555,8 @@ const collectionforSummaryReport = async (req, res) => {
         .json({ error: "fromDate and toDate are required" });
     }
 
-    const start = new Date(fromDate);
-    const end = new Date(toDate);
-    end.setHours(23, 59, 59, 999);
+    const start = reportDayStart(fromDate);
+    const end = reportDayEnd(toDate);
 
     if (isNaN(start) || isNaN(end)) {
       return res.status(400).json({ error: "Invalid date format" });
@@ -2774,7 +2568,7 @@ const collectionforSummaryReport = async (req, res) => {
     };
     if (fromCity) filter.fromCity = fromCity;
     if (pickUpBranch) filter.pickUpBranch = pickUpBranch;
-    if (bookedBy) filter.bookedBy = bookedBy;
+    if (bookedBy) filter.bookedBy = new mongoose.Types.ObjectId(bookedBy);
 
     const reportData = await Booking.aggregate([
       { $match: filter },
@@ -2836,7 +2630,7 @@ const collectionforSummaryReport = async (req, res) => {
     ]);
 
     if (!reportData.length) {
-      return res.status(404).json({ message: "No bookings found." });
+      return sendEmptyReport(req, res, { message: "No bookings found." });
     }
 
     // Calculate final summary
@@ -2859,7 +2653,7 @@ const collectionforSummaryReport = async (req, res) => {
     );
 
     // Final Response
-    res.status(200).json({
+    report({
       branches: reportData,
       ...summary,
     });
@@ -2870,6 +2664,7 @@ const collectionforSummaryReport = async (req, res) => {
 };
 
 const collectionReportToPay = async (req, res) => {
+  const report = payload => sendReport(req, res, payload, 'collectionReportToPay');
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
@@ -2887,9 +2682,8 @@ const collectionReportToPay = async (req, res) => {
         .json({ error: "fromDate and toDate are required" });
     }
 
-    const start = new Date(fromDate);
-    const end = new Date(toDate);
-    end.setHours(23, 59, 59, 999);
+    const start = reportDayStart(fromDate);
+    const end = reportDayEnd(toDate);
 
     if (isNaN(start) || isNaN(end)) {
       return res.status(400).json({ error: "Invalid date format" });
@@ -2903,7 +2697,7 @@ const collectionReportToPay = async (req, res) => {
     };
     if (fromCity) filter.fromCity = fromCity;
     if (pickUpBranch) filter.pickUpBranch = pickUpBranch;
-    if (bookedBy) filter.bookedBy = bookedBy;
+    if (bookedBy) filter.bookedBy = new mongoose.Types.ObjectId(bookedBy);
 
     const reportData = await Booking.aggregate([
       { $match: filter },
@@ -2969,7 +2763,7 @@ const collectionReportToPay = async (req, res) => {
     ]);
 
     if (!reportData.length) {
-      return res.status(404).json({ message: "No bookings found." });
+      return sendEmptyReport(req, res, { message: "No bookings found." });
     }
 
     // Final Summary Calculation
@@ -2991,7 +2785,7 @@ const collectionReportToPay = async (req, res) => {
       }
     );
 
-    res.status(200).json({
+    report({
       branches: reportData,
       ...summary,
     });
@@ -3116,7 +2910,7 @@ const collectionReportToPay = async (req, res) => {
 //     });
 
 //     if (!reportData.length) {
-//       return res.status(404).json({ message: "No bookings found." });
+//       return sendEmptyReport(req, res, { message: "No bookings found." });
 //     }
 
 //     // Step 4: Summary
@@ -3137,7 +2931,7 @@ const collectionReportToPay = async (req, res) => {
 //       finalNetAmount: 0,
 //     });
 
-//     res.status(200).json({
+//     report({
 //       branches: reportData,
 //       ...summary,
 //     });
@@ -3149,6 +2943,7 @@ const collectionReportToPay = async (req, res) => {
 // };
 
 const allCollectionReport = async (req, res) => {
+  const report = payload => sendReport(req, res, payload, 'allCollectionReport');
   try {
     const companyId = req.user?.companyId;
 
@@ -3176,9 +2971,8 @@ const allCollectionReport = async (req, res) => {
       return res.status(400).json({ message: "pickUpBranch required" });
     }
 
-    const start = new Date(fromDate);
-    const end = new Date(toDate);
-    end.setHours(23, 59, 59, 999);
+    const start = reportDayStart(fromDate);
+    const end = reportDayEnd(toDate);
 
     if (isNaN(start) || isNaN(end)) {
       return res.status(400).json({ error: "Invalid date format" });
@@ -3278,7 +3072,7 @@ const allCollectionReport = async (req, res) => {
       },
     ]);
 
-    const deliveryMap = {};
+    const deliveryMap = Object.create(null);
     for (const d of deliveryData) {
       deliveryMap[d._id] = d.toPayDeliveredAmount;
     }
@@ -3336,7 +3130,7 @@ const allCollectionReport = async (req, res) => {
       }
     );
 
-    res.status(200).json({
+    report({
       branches: reportData,
       ...summary,
     });
@@ -3347,6 +3141,7 @@ const allCollectionReport = async (req, res) => {
 };
 
 const bookingTypeWiseCollection = async (req, res) => {
+  const report = payload => sendReport(req, res, payload, 'bookingTypeWiseCollection');
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
@@ -3364,9 +3159,8 @@ const bookingTypeWiseCollection = async (req, res) => {
         .json({ error: "fromDate and toDate are required" });
     }
 
-    const start = new Date(fromDate);
-    const end = new Date(toDate);
-    end.setHours(23, 59, 59, 999);
+    const start = reportDayStart(fromDate);
+    const end = reportDayEnd(toDate);
 
     const filter = {
       bookingDate: { $gte: start, $lte: end },
@@ -3375,7 +3169,7 @@ const bookingTypeWiseCollection = async (req, res) => {
     };
     if (fromCity) filter.fromCity = fromCity;
     if (pickUpBranch) filter.pickUpBranch = pickUpBranch;
-    if (bookedBy) filter.bookedBy = bookedBy;
+    if (bookedBy) filter.bookedBy = new mongoose.Types.ObjectId(bookedBy);
 
     const reportData = await Booking.aggregate([
       { $match: filter },
@@ -3413,7 +3207,7 @@ const bookingTypeWiseCollection = async (req, res) => {
     ]);
 
     if (!reportData.length) {
-      return res.status(404).json({ message: "No bookings found." });
+      return sendEmptyReport(req, res, { message: "No bookings found." });
     }
 
     const summary = reportData.reduce(
@@ -3430,7 +3224,7 @@ const bookingTypeWiseCollection = async (req, res) => {
       }
     );
 
-    res.status(200).json({
+    report({
       data: reportData,
       ...summary,
     });
@@ -3443,6 +3237,7 @@ const bookingTypeWiseCollection = async (req, res) => {
 //.......................................................................................
 
 const parcelBranchConsolidatedReport = async (req, res) => {
+  const report = payload => sendReport(req, res, payload, 'parcelBranchConsolidatedReport');
   try {
     const { fromDate, toDate, fromCity, pickUpBranch } = req.body;
     const companyId = req.user?.companyId;
@@ -3463,8 +3258,8 @@ const parcelBranchConsolidatedReport = async (req, res) => {
       return res.status(400).json({ message: "pickUpBranch required" });
     }
 
-    const from = new Date(fromDate + "T00:00:00+05:30");
-    const to = new Date(toDate + "T23:59:59+05:30");
+    const from = reportDayStart(fromDate);
+    const to = reportDayEnd(toDate);
 
     // === Booking Match ===
     const matchStage = {
@@ -3473,7 +3268,7 @@ const parcelBranchConsolidatedReport = async (req, res) => {
     };
 
     if (pickUpBranch) matchStage.pickUpBranch = pickUpBranch;
-    if (fromCity) matchStage.fromCity = new RegExp(`^${fromCity}$`, "i");
+    if (fromCity) matchStage.fromCity = new RegExp(`^${escapeRegex(fromCity)}$`, "i");
 
     const bookingData = await Booking.aggregate([
       { $match: matchStage },
@@ -3491,7 +3286,7 @@ const parcelBranchConsolidatedReport = async (req, res) => {
     ]);
 
     // === Branch-level grouping ===
-    const branchMap = {};
+    const branchMap = Object.create(null);
     const totals = {
       finalPaidAmount: 0,
       finalToPayAmount: 0,
@@ -3521,11 +3316,11 @@ const parcelBranchConsolidatedReport = async (req, res) => {
 
       const entry = branchMap[branchCode];
 
-      if (bookingType === "paid") {
+      if (bookingType === "paid" && bookingStatus !== 5) {
         entry.paidAmount += record.grandTotal;
         totals.finalPaidAmount += record.grandTotal;
       }
-      if (bookingType === "credit") {
+      if (bookingType === "credit" && bookingStatus !== 5) {
         entry.creditAmount += record.grandTotal;
         totals.finalCreditAmount += record.grandTotal;
       }
@@ -3533,7 +3328,7 @@ const parcelBranchConsolidatedReport = async (req, res) => {
         entry.cancelAmount += record.grandTotal;
         totals.finalCancelAmount += record.grandTotal;
       }
-      if (bookingType === "toPay") {
+      if (bookingType === "toPay" && bookingStatus !== 5) {
         entry.toPayAmount += record.grandTotal;
         totals.finalToPayAmount += record.grandTotal;
       }
@@ -3548,9 +3343,9 @@ const parcelBranchConsolidatedReport = async (req, res) => {
     };
 
     if (pickUpBranch) deliveryMatch.deliveryBranch = pickUpBranch;
-    if (fromCity) deliveryMatch.deliveryCity = new RegExp(`^${fromCity}$`, "i");
+    if (fromCity) deliveryMatch.deliveryCity = new RegExp(`^${escapeRegex(fromCity)}$`, "i");
 
-    const deliveryData = await Delivery.find(deliveryMatch);
+    const deliveryData = await Delivery.find(deliveryMatch).sort({ _id: 1 });
 
     for (const delivery of deliveryData) {
       const branchCode = delivery.deliveryBranch;
@@ -3584,7 +3379,7 @@ const parcelBranchConsolidatedReport = async (req, res) => {
       totals.finalTotal += entry.total;
     }
 
-    return res.status(200).json({
+    return report({
       data: Object.values(branchMap),
       ...totals,
     });
@@ -3598,6 +3393,7 @@ const parcelBranchConsolidatedReport = async (req, res) => {
 
 
 const deliveryReport = async (req, res) => {
+  const report = payload => sendReport(req, res, payload, 'deliveryReport');
   try {
     const { fromDate, toDate, fromCity, deliveryBranch } = req.body;
     const companyId = req.user?.companyId;
@@ -3614,8 +3410,8 @@ const deliveryReport = async (req, res) => {
         .json({ message: "fromDate and toDate are required" });
     }
 
-    const from = new Date(fromDate + "T00:00:00+05:30");
-    const to = new Date(toDate + "T23:59:59+05:30");
+    const from = reportDayStart(fromDate);
+    const to = reportDayEnd(toDate);
 
     // Build match filter
     const match = {
@@ -3624,7 +3420,7 @@ const deliveryReport = async (req, res) => {
       toPayDeliveredAmount: { $gt: 0 },
     };
 
-    if (fromCity) match.deliveryCity = new RegExp(`^${fromCity}$`, "i");
+    if (fromCity) match.deliveryCity = new RegExp(`^${escapeRegex(fromCity)}$`, "i");
     if (deliveryBranch) match.deliveryBranch = deliveryBranch;
 
     // Aggregate by branch
@@ -3649,7 +3445,7 @@ const deliveryReport = async (req, res) => {
 
     const total = data.reduce((sum, d) => sum + d.toPayDeliveredAmount, 0);
 
-    return res.status(200).json({
+    return report({
       data,
       totalToPayDeliveredAmount: total,
     });
@@ -3842,7 +3638,7 @@ const deliveryReport = async (req, res) => {
 //     }
 
 //     // --- Response ---
-//   res.status(200).json({
+//   report({
 //   paidDetails: {
 //     data: paidData,
 //     totalPaidAmount: paidData.reduce((sum, d) => sum + d.grandTotal, 0)
@@ -3862,16 +3658,16 @@ const deliveryReport = async (req, res) => {
 //     console.error("Report Error:", err);
 //     res.status(500).json({ error: err.message });
 //   }
-// }   
+// }
 
 
- 
+
 
 
 
 const parcelBranchWiseGSTReport = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;    
+    const companyId = req.user?.companyId;
     if (!companyId) {
       return res.status(401).json({
         success: false,
@@ -3902,27 +3698,26 @@ const parcelBranchWiseGSTReport = async (req, res) => {
     }
 
     // Convert dates and set endDate time to end of day
-    const startDate = new Date(fromDate);
-    const endDate = new Date(toDate);
-    endDate.setHours(23, 59, 59, 999);
+    const startDate = reportDayStart(fromDate);
+    const endDate = reportDayEnd(toDate);
 
     // Build the initial $match query dynamically
     const matchQuery = {
       bookingDate: { $gte: startDate, $lte: endDate },
       // Add companyId if your Booking schema has it (recommended)
-      companyId,
+      companyId: new mongoose.Types.ObjectId(companyId),
     };
 
     // Add fromCity to query only if provided and not "all"
     if (!isCityAll) {
-      matchQuery.fromCity = { $regex: new RegExp(`^${fromCity}$`, "i") }; // Case-insensitive exact match
+      matchQuery.fromCity = { $regex: new RegExp(`^${escapeRegex(fromCity)}$`, "i") }; // Case-insensitive exact match
     }
 
     // Add pickUpBranch to query only if provided and not "all"
     if (!isBranchAll) {
       // Adjust the field name as per your schema (pickUpBranch or pickUpBranchname)
       matchQuery.pickUpBranch = {
-        $regex: new RegExp(`^${pickUpBranch}$`, "i"),
+        $regex: new RegExp(`^${escapeRegex(pickUpBranch)}$`, "i"),
       };
     }
 
@@ -3934,7 +3729,7 @@ const parcelBranchWiseGSTReport = async (req, res) => {
           bookingGST: [
             {
               $match: {
-                bookingType: { $in: [/^pay$/i, /^topay$/i] },
+                bookingType: { $in: [/^paid$/i, /^topay$/i] },
                 bookingStatus: { $in: [0, 1, 2] },
               },
             },
@@ -3949,7 +3744,7 @@ const parcelBranchWiseGSTReport = async (req, res) => {
           deliveryGST: [
             {
               $match: {
-                bookingType: { $in: [/^pay$/i, /^topay$/i] },
+                bookingType: { $in: [/^paid$/i, /^topay$/i] },
                 bookingStatus: 4,
               },
             },
@@ -4017,6 +3812,7 @@ const parcelBranchWiseGSTReport = async (req, res) => {
 };
 
 const consolidatedReportBranch = async (req, res) => {
+  const report = payload => sendReport(req, res, payload, 'consolidatedReportBranch');
   try {
     const {
       fromDate,
@@ -4040,10 +3836,8 @@ const consolidatedReportBranch = async (req, res) => {
 
     // Apply common filters
     if (fromDate && toDate) {
-      const from = new Date(fromDate);
-      from.setHours(0, 0, 0, 0);
-      const to = new Date(toDate);
-      to.setHours(23, 59, 59, 999);
+      const from = reportDayStart(fromDate);
+      const to = reportDayEnd(toDate);
       matchStageBase.bookingDate = { $gte: from, $lte: to };
     }
 
@@ -4054,7 +3848,7 @@ const consolidatedReportBranch = async (req, res) => {
     // 1️⃣ Category-wise Bookings
 
       const fetchAndFormat = async (type) => {
-    const details = await Booking.find({ ...matchStageBase, bookingType: type })
+    const details = await Booking.find({ ...matchStageBase, bookingType: type }).sort({ _id: 1 })
       .select("grnNo lrNumber bookingDate bookedBy toCity senderName receiverName packages totalCharge serviceCharges doorPickupCharges otherCharges grandTotal")
       .populate("bookedBy", "name email phone")
       .lean();
@@ -4215,10 +4009,8 @@ const consolidatedReportBranch = async (req, res) => {
     };
 
     if (fromDate && toDate) {
-      const from = new Date(fromDate);
-      from.setHours(0, 0, 0, 0);
-      const toD = new Date(toDate);
-      toD.setHours(23, 59, 59, 999);
+      const from = reportDayStart(fromDate);
+      const toD = reportDayEnd(toDate);
       deliverMatchStage.deliveryDate = { $gte: from, $lte: toD };
     }
 
@@ -4281,15 +4073,15 @@ const cityWiseDeliveryDetails = await Booking.aggregate([
       deliveryDate: {
         $ne: null,
         ...(fromDate && toDate && {
-          $gte: new Date(fromDate),
-          $lte: new Date(toDate),
+          $gte: reportDayStart(fromDate),
+          $lte: reportDayEnd(toDate),
         }),
       },
       ...(fromCity && {
-        fromCity: { $regex: new RegExp(fromCity, "i") },
+        fromCity: { $regex: new RegExp(escapeRegex(fromCity), "i") },
       }),
       ...(pickUpBranch && {
-        pickUpBranch: { $regex: new RegExp(pickUpBranch, "i") },
+        pickUpBranch: { $regex: new RegExp(escapeRegex(pickUpBranch), "i") },
       }),
       companyId: new mongoose.Types.ObjectId(companyId),
     },
@@ -4342,9 +4134,9 @@ const cityWiseDeliveryDetails = await Booking.aggregate([
       },
     },
   },
-]);   
+]);
 
-// Citywise Total 
+// Citywise Total
 
 const deliveryTotals = cityWiseDeliveryDetails.reduce(
   (acc, item) => {
@@ -4425,7 +4217,7 @@ BookingTypeBookings.forEach((item) => {
 
 
 
-//delivery 
+//delivery
 
 const deliveryMatch = {
   deliveryDate: { $ne: null },
@@ -4434,18 +4226,16 @@ const deliveryMatch = {
 
 // Apply filters
 if (fromDate && toDate) {
-  const from = new Date(fromDate);
-  from.setHours(0, 0, 0, 0);
-  const to = new Date(toDate);
-  to.setHours(23, 59, 59, 999);
+  const from = reportDayStart(fromDate);
+  const to = reportDayEnd(toDate);
   deliveryMatch.deliveryDate = { $gte: from, $lte: to };
 }
 
 if (fromCity) {
-  deliveryMatch.toCity = new RegExp(`^${fromCity}$`, "i");
+  deliveryMatch.toCity = new RegExp(`^${escapeRegex(fromCity)}$`, "i");
 }
 if (pickUpBranch) {
-  deliveryMatch.deliveryBranch = new RegExp(`^${pickUpBranch}$`, "i");
+  deliveryMatch.deliveryBranch = new RegExp(`^${escapeRegex(pickUpBranch)}$`, "i");
 }
 
 
@@ -4516,7 +4306,7 @@ for (const field of fieldsToAdd) {
 
 
     //  Final Response
-    res.status(200).json({
+    report({
     BookingTypes: {
       paid: paidResult.data,
       toPay: toPayResult.data,
@@ -4532,7 +4322,7 @@ for (const field of fieldsToAdd) {
     CategoryWiseBookingDetails,
      CategoryWiseBookingTotals,
       toPayDelivery
-      
+
     });
 
   } catch (error) {
@@ -4543,6 +4333,8 @@ for (const field of fieldsToAdd) {
 
 
 const senderReceiverGSTReport = async (req, res) => {
+  let databasePagination;
+  const report = payload => sendReportPage(res, payload, databasePagination);
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
@@ -4563,9 +4355,8 @@ const senderReceiverGSTReport = async (req, res) => {
     }
 
     // Parse dates and set endDate to end of day
-    const startDate = new Date(fromDate);
-    const endDate = new Date(toDate);
-    endDate.setHours(23, 59, 59, 999);
+    const startDate = reportDayStart(fromDate);
+    const endDate = reportDayEnd(toDate);
 
     // Build query with mandatory date filter and optional filters
     const query = {
@@ -4574,20 +4365,22 @@ const senderReceiverGSTReport = async (req, res) => {
     };
 
     if (branchCity) {
-      query.fromCity = { $regex: new RegExp(`^${branchCity}$`, "i") }; // Case-insensitive exact match
+      query.fromCity = { $regex: new RegExp(`^${escapeRegex(branchCity)}$`, "i") }; // Case-insensitive exact match
     }
 
     if (branchName) {
-      query.pickUpBranch = { $regex: new RegExp(`^${branchName}$`, "i") }; // Case-insensitive exact match
+      query.pickUpBranch = { $regex: new RegExp(`^${escapeRegex(branchName)}$`, "i") }; // Case-insensitive exact match
     }
 
     // Fetch matching bookings, selecting only relevant fields
-    const bookings = await Booking.find(query).select(
+    const page = await queryReportPage(Booking.find(query).sort({ _id: 1 }).select(
       "grnNo bookingDate senderName receiverName bookingType ltDate senderGst receiverGst fromCity toCity totalQuantity grandTotal parcelGstAmount"
-    );
+    ), req, {"finalGrandTotal":"$grandTotal","finalTotalQuantity":"$totalQuantity","finalGstTotalAmount":"$parcelGstAmount"});
+    const bookings = page.rows;
+    databasePagination = page.pagination;
 
-    if (bookings.length === 0) {
-      return res.status(404).json({
+    if (page.totals.totalRecords === 0) {
+      return sendEmptyReport(req, res, {
         success: true,
         message: "No bookings found for the given criteria",
         bookings: [],
@@ -4598,23 +4391,14 @@ const senderReceiverGSTReport = async (req, res) => {
     }
 
     // Calculate totals safely using reduce
-    const finalTotalQuantity = bookings.reduce(
-      (sum, b) => sum + (b.totalQuantity || 0),
-      0
-    );
+    const finalTotalQuantity = page.totals.finalTotalQuantity;
 
-    const finalGrandTotal = bookings.reduce(
-      (sum, b) => sum + (b.grandTotal || 0),
-      0
-    );
+    const finalGrandTotal = page.totals.finalGrandTotal;
 
-    const finalGstTotalAmount = bookings.reduce(
-      (sum, b) => sum + (b.parcelGstAmount || 0),
-      0
-    );
+    const finalGstTotalAmount = page.totals.finalGstTotalAmount;
 
     // Send response with bookings and totals
-    return res.status(200).json({
+    return report({
       success: true,
       bookings,
       finalTotalQuantity,
@@ -4687,6 +4471,8 @@ const markParcelAsMissing = async (req, res) => {
 };
 
 const parcelStatusDateDifferenceReport = async (req, res) => {
+  let databasePagination;
+  const report = payload => sendReportPage(res, payload, databasePagination);
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
@@ -4705,9 +4491,8 @@ const parcelStatusDateDifferenceReport = async (req, res) => {
       });
     }
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999); // Include the whole end day
+    const start = reportDayStart(startDate);
+    const end = reportDayEnd(endDate);
 
     // Build query
     const query = {
@@ -4715,24 +4500,26 @@ const parcelStatusDateDifferenceReport = async (req, res) => {
       companyId, // Ensure filtering by company
     };
 
-    if (fromCity) query.fromCity = { $regex: new RegExp(`^${fromCity}$`, "i") };
-    if (toCity) query.toCity = { $regex: new RegExp(`^${toCity}$`, "i") };
+    if (fromCity) query.fromCity = { $regex: new RegExp(`^${escapeRegex(fromCity)}$`, "i") };
+    if (toCity) query.toCity = { $regex: new RegExp(`^${escapeRegex(toCity)}$`, "i") };
     if (bookingStatus !== "all") query.bookingStatus = bookingStatus;
 
     // Select required fields
-    const bookings = await Booking.find(query).select(
+    const page = await queryReportPage(Booking.find(query).sort({ _id: 1 }).select(
       "grnNo lrNumber bookingDate loadingDate unloadingDate deliveryDate deliveryEmployee fromCity toCity bookingStatus parcelGstAmount"
-    );
+    ), req, {});
+    const bookings = page.rows;
+    databasePagination = page.pagination;
 
-    if (bookings.length === 0) {
-      return res.status(404).json({
+    if (page.totals.totalRecords === 0) {
+      return sendEmptyReport(req, res, {
         success: true,
         data: [],
         message: "No bookings found for the given criteria",
       });
     }
 
-    return res.status(200).json({
+    return report({
       success: true,
       data: bookings,
       message: "Parcel bookings report generated successfully",
@@ -4748,6 +4535,8 @@ const parcelStatusDateDifferenceReport = async (req, res) => {
 };
 
 const pendingDeliveryStockReport = async (req, res) => {
+  let databasePagination;
+  const report = payload => sendReportPage(res, payload, databasePagination);
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
@@ -4765,9 +4554,8 @@ const pendingDeliveryStockReport = async (req, res) => {
         .json({ success: false, message: "fromDate and toDate are required" });
     }
 
-    const startDate = new Date(fromDate);
-    const endDate = new Date(toDate);
-    endDate.setHours(23, 59, 59, 999);
+    const startDate = reportDayStart(fromDate);
+    const endDate = reportDayEnd(toDate);
 
     const isFromCityAll = !fromCity || fromCity.toLowerCase() === "all";
     const isToCityAll = !toCity || toCity.toLowerCase() === "all";
@@ -4786,13 +4574,13 @@ const pendingDeliveryStockReport = async (req, res) => {
     if (!isPickUpBranchAll) query.pickUpBranch = pickUpBranch;
     if (!isDropBranchAll) query.dropBranch = dropBranch;
 
-    const bookings = await Booking.find(query).lean();
-    const bookingRecords = bookings.length;
+    const options = getReportPagination(req);
 
     const [result] = await Booking.aggregate([
       { $match: query },
       {
         $facet: {
+          records: [{ $sort: { bookingDate: -1, _id: -1 } }, { $skip: options.skip }, { $limit: options.limit }],
           totalData: [
             {
               $group: {
@@ -4844,7 +4632,7 @@ const pendingDeliveryStockReport = async (req, res) => {
 
     const byBookingType = {};
     bookingTypes.forEach((type) => {
-      const data = byBookingTypeRaw.find((item) => item._id === type) || {
+      const data = byBookingTypeRaw.find((item) => String(item._id).toLowerCase() === type.toLowerCase()) || {
         totalRecords: 0,
         totalQuantity: 0,
         grandTotalSum: 0,
@@ -4858,7 +4646,7 @@ const pendingDeliveryStockReport = async (req, res) => {
 
     // Include other booking types dynamically
     byBookingTypeRaw.forEach((item) => {
-      if (!byBookingType[item._id]) {
+      if (!Object.keys(byBookingType).some(type => type.toLowerCase() === String(item._id).toLowerCase())) {
         byBookingType[item._id] = {
           totalRecords: item.totalRecords,
           totalQuantity: item.totalQuantity,
@@ -4867,8 +4655,11 @@ const pendingDeliveryStockReport = async (req, res) => {
       }
     });
 
+    const bookings = result?.records || [];
+    const bookingRecords = totalData.totalRecords;
+    databasePagination = paginationMetadata(options, bookingRecords, bookings.length);
     const formattedBookings = bookings.map((booking, index) => ({
-      "Sr. No": index + 1,
+      "Sr. No": options.skip + index + 1,
       "WB No.": booking.eWayBillNo,
       "Manual TicketNo.": booking.receiptNo,
       "Received Date": booking.bookingDate
@@ -4890,7 +4681,7 @@ const pendingDeliveryStockReport = async (req, res) => {
         : 0,
     }));
 
-    res.status(200).json({
+    report({
       success: true,
       data: {
         message:
@@ -4930,6 +4721,7 @@ const pendingDeliveryStockReport = async (req, res) => {
 };
 
 const pendingDeliveryLuggageReport = async (req, res) => {
+  const report = payload => sendReport(req, res, payload, 'pendingDeliveryLuggageReport');
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
@@ -4954,9 +4746,8 @@ const pendingDeliveryLuggageReport = async (req, res) => {
         .json({ success: false, message: "fromDate and toDate are required" });
     }
 
-    const start = new Date(fromDate);
-    const end = new Date(toDate);
-    end.setHours(23, 59, 59, 999);
+    const start = reportDayStart(fromDate);
+    const end = reportDayEnd(toDate);
 
     const query = {
       companyId,
@@ -4970,14 +4761,14 @@ const pendingDeliveryLuggageReport = async (req, res) => {
     if (dropBranch) query.dropBranch = dropBranch;
     if (bookingType) query.bookingType = bookingType;
 
-    const pendingDeliveries = await Booking.find(query)
+    const pendingDeliveries = await Booking.find(query).sort({ _id: 1 })
       .select(
         "grnNo unloadingDate fromCity toCity senderName senderMobile receiverName bookingType packages bookingDate grandTotal"
       )
       .lean();
 
     if (!pendingDeliveries.length) {
-      return res.status(404).json({
+      return sendEmptyReport(req, res, {
         success: false,
         message: "No pending deliveries found for the given criteria",
       });
@@ -5044,7 +4835,7 @@ const pendingDeliveryLuggageReport = async (req, res) => {
       };
     });
 
-    res.status(200).json({
+    report({
       success: true,
       message: "Pending delivery luggage report generated successfully",
       data: {
@@ -5064,6 +4855,7 @@ const pendingDeliveryLuggageReport = async (req, res) => {
 };
 
 const parcelReceivedStockReport = async (req, res) => {
+  const report = payload => sendReport(req, res, payload, 'parcelReceivedStockReport');
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
@@ -5090,15 +4882,14 @@ const parcelReceivedStockReport = async (req, res) => {
       });
     }
 
-    const start = new Date(fromDate);
-    const end = new Date(toDate);
-    end.setHours(23, 59, 59, 999);
+    const start = reportDayStart(fromDate);
+    const end = reportDayEnd(toDate);
 
     // Step 1: Get grnNo list from ParcelUnloading with companyId filter
     const unloadingGrns = await ParcelUnloading.find({
       companyId,
       unloadingDate: { $gte: start, $lte: end },
-    })
+    }).sort({ _id: 1 })
       .select("grnNo -_id")
       .lean();
 
@@ -5108,7 +4899,7 @@ const parcelReceivedStockReport = async (req, res) => {
       .filter((grn) => !isNaN(grn));
 
     if (!grnNos.length) {
-      return res.status(404).json({
+      return sendEmptyReport(req, res, {
         success: false,
         message: "No GRNs found in ParcelUnloading for given date range",
       });
@@ -5126,14 +4917,14 @@ const parcelReceivedStockReport = async (req, res) => {
     if (dropBranch) query.dropBranch = dropBranch;
     if (receiverName) query.receiverName = receiverName;
 
-    const bookings = await Booking.find(query)
+    const bookings = await Booking.find(query).sort({ _id: 1 })
       .select(
         "grnNo lrNumber deliveryDate unloadingDate senderName senderMobile bookingType bookingStatus receiverName fromCity pickUpBranch packages grandTotal"
       )
       .lean();
 
     if (!bookings.length) {
-      return res.status(404).json({
+      return sendEmptyReport(req, res, {
         success: false,
         message: "No bookings found for the given criteria",
       });
@@ -5198,7 +4989,7 @@ const parcelReceivedStockReport = async (req, res) => {
       if (type === "paid") finalTotalPaid += grandTotal;
     }
 
-    return res.status(200).json({
+    return report({
       data: updatedDeliveries,
       totalGrandTotal,
       grandTotalPackages,
@@ -5217,6 +5008,7 @@ const parcelReceivedStockReport = async (req, res) => {
 };
 
 const deliveredStockReport = async (req, res) => {
+  const report = payload => sendReport(req, res, payload, 'deliveredStockReport');
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
@@ -5236,8 +5028,8 @@ const deliveredStockReport = async (req, res) => {
       });
     }
 
-    const start = new Date(fromDate + "T00:00:00+05:30");
-    const end = new Date(toDate + "T23:59:59+05:30");
+    const start = reportDayStart(fromDate);
+    const end = reportDayEnd(toDate);
 
     let query = {
       companyId,
@@ -5250,14 +5042,14 @@ const deliveredStockReport = async (req, res) => {
     if (pickUpBranch) query.pickUpBranch = pickUpBranch;
     if (dropBranch) query.dropBranch = dropBranch;
 
-    const stockReport = await Booking.find(query)
+    const stockReport = await Booking.find(query).sort({ _id: 1 })
       .select(
         "grnNo lrNumber deliveryEmployee grandTotal fromCity pickUpBranchname senderName senderMobile bookingType receiverName packages.packageType packages.quantity packages.totalPrice parcelGstAmount serviceCharges hamaliCharges doorDeliveryCharges doorPickupCharges toPayDeliveredAmount toPayDeliveryAmount"
       )
       .lean();
 
     if (!stockReport.length) {
-      return res.status(404).json({
+      return sendEmptyReport(req, res, {
         success: false,
         message: "No stock found for the given criteria",
       });
@@ -5295,6 +5087,7 @@ const deliveredStockReport = async (req, res) => {
         credit: 0,
         netAmount: 0,
       },
+      FOC: { freight: 0, gst: 0, otherCharges: 0, doorDeliveryCharges: 0, credit: 0, netAmount: 0 },
     };
 
     const updatedDeliveries = stockReport
@@ -5343,6 +5136,7 @@ const deliveredStockReport = async (req, res) => {
         else if (normalizedType === "topay" || normalizedType === "toPay")
           normalizedType = "ToPay";
         else if (normalizedType === "credit") normalizedType = "Credit";
+        else if (normalizedType === "foc") normalizedType = "FOC";
         else return null;
 
         bookingTypeSummary[normalizedType].freight += freight;
@@ -5373,7 +5167,7 @@ const deliveredStockReport = async (req, res) => {
       })
       .filter(Boolean);
 
-    return res.status(200).json({
+    return report({
       success: true,
       message: "Delivered stock report generated successfully",
       data: {
@@ -5400,6 +5194,7 @@ const deliveredStockReport = async (req, res) => {
 };
 
 const pendingDispatchStockReport = async (req, res) => {
+  const report = payload => sendReport(req, res, payload, 'pendingDispatchStockReport');
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
@@ -5422,10 +5217,8 @@ const pendingDispatchStockReport = async (req, res) => {
     const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
 
     // Date range filter
-    const start = new Date(fromDate);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(toDate);
-    end.setHours(23, 59, 59, 999);
+    const start = reportDayStart(fromDate);
+    const end = reportDayEnd(toDate);
 
     // Base query with companyId and date range
     let query = {
@@ -5438,14 +5231,14 @@ const pendingDispatchStockReport = async (req, res) => {
     if (pickUpBranch && pickUpBranch !== "all")
       query.pickUpBranch = pickUpBranch;
 
-    const dispatchReport = await Booking.find(query)
+    const dispatchReport = await Booking.find(query).sort({ _id: 1 })
       .select(
         "_id grnNo lrNumber totalPackages fromCity receiptNo bookingDate pickUpBranchname toCity deliveryEmployee vehicalNumber senderName bookingStatus receiverMobile bookingType receiverName hamaliCharge grandTotal packages"
       )
       .lean();
 
     if (!dispatchReport.length) {
-      return res.status(404).json({
+      return sendEmptyReport(req, res, {
         success: false,
         message: "No pending deliveries found for the given criteria",
       });
@@ -5532,7 +5325,7 @@ const pendingDispatchStockReport = async (req, res) => {
       {}
     );
 
-    return res.status(200).json({
+    return report({
       bookings,
       summary: bookingSummary,
       allTotalPackages,
@@ -5550,6 +5343,7 @@ const pendingDispatchStockReport = async (req, res) => {
 };
 
 const dispatchedMemoReport = async (req, res) => {
+  const report = payload => sendReport(req, res, payload, 'dispatchedMemoReport');
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
@@ -5577,11 +5371,9 @@ const dispatchedMemoReport = async (req, res) => {
       });
     }
 
-    const start = new Date(fromDate);
-    start.setHours(0, 0, 0, 0);
+    const start = reportDayStart(fromDate);
 
-    const end = new Date(toDate);
-    end.setHours(23, 59, 59, 999);
+    const end = reportDayEnd(toDate);
 
     // Build base query with companyId and booking date range
     const query = {
@@ -5608,7 +5400,7 @@ const dispatchedMemoReport = async (req, res) => {
     if (vehicalNumber && vehicalNumber !== "all")
       query.vehicalNumber = vehicalNumber;
 
-    const stockReport = await Booking.find(query)
+    const stockReport = await Booking.find(query).sort({ _id: 1 })
       .select(
         "_id grnNo lrNumber vehicalNumber toCity serviceCharge hamaliCharge grandTotal senderName receiverName senderMobile loadingDate bookingDate bookingType packages.packageType packages.quantity totalPackages parcelGstAmount"
       )
@@ -5691,7 +5483,7 @@ const dispatchedMemoReport = async (req, res) => {
       })
     );
 
-    return res.status(200).json({
+    return report({
       success: true,
       message: "Dispatched memo report generated successfully",
       data: groupedData,
@@ -5711,6 +5503,8 @@ const dispatchedMemoReport = async (req, res) => {
 };
 
 const parcelIncomingLuggagesReport = async (req, res) => {
+  let databasePagination;
+  const report = payload => sendReportPage(res, payload, databasePagination);
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
@@ -5730,11 +5524,9 @@ const parcelIncomingLuggagesReport = async (req, res) => {
       });
     }
 
-    const start = new Date(fromDate);
-    start.setHours(0, 0, 0, 0);
+    const start = reportDayStart(fromDate);
 
-    const end = new Date(toDate);
-    end.setHours(23, 59, 59, 999);
+    const end = reportDayEnd(toDate);
 
     const query = {
       companyId, // ensure filtering by company
@@ -5748,34 +5540,26 @@ const parcelIncomingLuggagesReport = async (req, res) => {
       query.pickUpBranch = pickUpBranch;
     if (dropBranch && dropBranch !== "all") query.dropBranch = dropBranch;
 
-    const stockReport = await Booking.find(query)
+    const page = await queryReportPage(Booking.find(query).sort({ _id: 1 })
       .select(
         "grnNo lrNumber fromCity toCity pickUpBranchname dropBranchname  deliveryEmployee senderName senderMobile vehicalNumber loadingDate bookingDate bookingType receiverName receiverMobile packages.packageType packages.quantity grandTotal"
       )
-      .lean();
+      .lean(), req, {"totalGrandTotal":"$grandTotal","totalQuantity":{"$sum":"$packages.quantity"}});
+    const stockReport = page.rows;
+    databasePagination = page.pagination;
 
-    if (stockReport.length === 0) {
-      return res.status(404).json({
+    if (page.totals.totalRecords === 0) {
+      return sendEmptyReport(req, res, {
         success: false,
         message: "No stock found for the given criteria",
       });
     }
 
-    const totalGrandTotal = stockReport.reduce(
-      (sum, record) => sum + (record.grandTotal || 0),
-      0
-    );
+    const totalGrandTotal = page.totals.totalGrandTotal;
 
-    const totalQuantity = stockReport.reduce((total, record) => {
-      if (Array.isArray(record.packages)) {
-        for (const pkg of record.packages) {
-          total += pkg.quantity || 0;
-        }
-      }
-      return total;
-    }, 0);
+    const totalQuantity = page.totals.totalQuantity;
 
-    return res.status(200).json({
+    return report({
       success: true,
       data: stockReport,
       totalGrandTotal,
@@ -5882,6 +5666,7 @@ const getAllBookingsAbove700 = async (req, res) => {
 };
 
 const salesSummaryByBranchWise = async (req, res) => {
+  const report = payload => sendReport(req, res, payload, 'salesSummaryByBranchWise');
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
@@ -5909,8 +5694,8 @@ const salesSummaryByBranchWise = async (req, res) => {
       });
     }
     const [day, month, year] = dateParts;
-    const start = new Date(`${year}-${month}-${day}T00:00:00.000Z`);
-    const end = new Date(`${year}-${month}-${day}T23:59:59.999Z`);
+    const start = reportDayStart(`${year}-${month}-${day}`);
+    const end = reportDayEnd(`${year}-${month}-${day}`);
 
     const bookings = await Booking.aggregate([
       {
@@ -5955,6 +5740,7 @@ const salesSummaryByBranchWise = async (req, res) => {
           from: "branches",
           localField: "_id",
           foreignField: "branchUniqueId",
+          pipeline: [{ $match: { companyId: new mongoose.Types.ObjectId(companyId) } }],
           as: "branchDetails",
         },
       },
@@ -5981,14 +5767,14 @@ const salesSummaryByBranchWise = async (req, res) => {
     ]);
 
     if (bookings.length === 0) {
-      return res.status(200).json({
+      return report({
         success: true,
         message: "No bookings found for the given date.",
         data: [],
       });
     }
 
-    return res.status(200).json(bookings);
+    return report(bookings);
   } catch (err) {
     console.error("Error fetching branch-wise bookings:", err);
     return res.status(500).json({
@@ -5999,6 +5785,7 @@ const salesSummaryByBranchWise = async (req, res) => {
 };
 
 const collectionSummaryReport = async (req, res) => {
+  const report = payload => sendReport(req, res, payload, 'collectionSummaryReport');
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
@@ -6016,10 +5803,8 @@ const collectionSummaryReport = async (req, res) => {
       });
     }
 
-    const startDate = moment(selectedDate, "DD-MM-YYYY")
-      .startOf("day")
-      .toDate();
-    const endDate = moment(selectedDate, "DD-MM-YYYY").endOf("day").toDate();
+    const startDate = reportDayStart(selectedDate);
+    const endDate = reportDayEnd(selectedDate);
 
     const summary = await Booking.aggregate([
       {
@@ -6056,7 +5841,7 @@ const collectionSummaryReport = async (req, res) => {
       0
     );
 
-    res.status(200).json({
+    report({
       summary,
       totalBookingsForDay,
     });
@@ -6069,6 +5854,7 @@ const collectionSummaryReport = async (req, res) => {
 };
 
 const branchAccount = async (req, res) => {
+  const report = payload => sendReport(req, res, payload, 'branchAccount');
   try {
     const companyId = req.user?.companyId;
 
@@ -6097,8 +5883,8 @@ const branchAccount = async (req, res) => {
         });
       }
 
-      const start = new Date(`${year}-${month}-${day}T00:00:00.000Z`);
-      const end = new Date(`${year}-${month}-${day}T23:59:59.999Z`);
+      const start = reportDayStart(`${year}-${month}-${day}`);
+      const end = reportDayEnd(`${year}-${month}-${day}`);
 
       matchStage.bookingDate = { $gte: start, $lte: end };
     }
@@ -6128,7 +5914,7 @@ const branchAccount = async (req, res) => {
     // Calculate overall total
     const totalAmount = result.reduce((sum, item) => sum + item.grandTotal, 0);
 
-    res.status(200).json({
+    report({
       branchwise: result,
       totalAmount,
     });
@@ -6143,6 +5929,7 @@ const branchAccount = async (req, res) => {
 };
 
 const acPartyAccount = async (req, res) => {
+  const report = payload => sendReport(req, res, payload, 'acPartyAccount');
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
@@ -6169,8 +5956,8 @@ const acPartyAccount = async (req, res) => {
       });
     }
 
-    const start = new Date(`${year}-${month}-${day}T00:00:00.000Z`);
-    const end = new Date(`${year}-${month}-${day}T23:59:59.999Z`);
+    const start = reportDayStart(`${year}-${month}-${day}`);
+    const end = reportDayEnd(`${year}-${month}-${day}`);
 
     // Step 1: Get senderNames from Booking filtered by companyId & date
     const bookings = await Booking.aggregate([
@@ -6196,7 +5983,7 @@ const acPartyAccount = async (req, res) => {
     ]);
 
     if (bookings.length === 0) {
-      return res.status(404).json({
+      return sendEmptyReport(req, res, {
         success: true,
         message: "No bookings found for the given date.",
       });
@@ -6207,15 +5994,15 @@ const acPartyAccount = async (req, res) => {
       { companyId }, // Optional: only if CFMaster has companyId field
       { name: 1, _id: 0 }
     );
-    const validSenderNames = cfMasters.map((cf) => cf.name);
+    const validSenderNames = new Set(cfMasters.map((cf) => cf.name));
 
     // Step 3: Filter bookings by valid senderNames from CFMaster
     const filtered = bookings.filter((b) =>
-      validSenderNames.includes(b.senderName)
+      validSenderNames.has(b.senderName)
     );
 
     if (filtered.length === 0) {
-      return res.status(404).json({
+      return sendEmptyReport(req, res, {
         success: true,
         message: "No matching senderName found in CFMaster for this date.",
       });
@@ -6227,7 +6014,7 @@ const acPartyAccount = async (req, res) => {
       0
     );
 
-    return res.status(200).json({
+    return report({
       parties: filtered,
       totalAmount,
     });
@@ -6241,6 +6028,7 @@ const acPartyAccount = async (req, res) => {
 };
 
 const statusWiseSummary = async (req, res) => {
+  const report = payload => sendReport(req, res, payload, 'statusWiseSummary');
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
@@ -6294,14 +6082,14 @@ const statusWiseSummary = async (req, res) => {
     ]);
 
     if (result.length === 0) {
-      return res.status(404).json({
+      return sendEmptyReport(req, res, {
         success: true,
         message: "No booking statuses found.",
         branchwiseStatus: [],
       });
     }
 
-    return res.status(200).json({
+    return report({
       branchwiseStatus: result,
     });
   } catch (error) {

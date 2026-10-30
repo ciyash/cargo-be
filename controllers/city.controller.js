@@ -1,3 +1,4 @@
+import { writableFields } from "../utils/update-fields.js";
 import { City } from '../models/multi.model.js';
 import mongoose from 'mongoose';
 // Create City
@@ -66,7 +67,7 @@ const updateCity = async (req, res) => {
 
 const updatedCity = await City.findOneAndUpdate(
   { _id: id, companyId },
-  req.body,
+  { $set: writableFields(req.body) },
   { new: true, runValidators: true }
 );
 

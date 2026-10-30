@@ -1,3 +1,4 @@
+import { writableFields } from "../utils/update-fields.js";
 import CFMaster from '../models/cf.master.model.js';
 
 // Create a new master record
@@ -117,7 +118,7 @@ const updateMaster = async (req, res) => {
 
     const updatedMaster = await CFMaster.findOneAndUpdate(
       { _id: req.params.id, companyId },
-      req.body,
+      { $set: writableFields(req.body) },
       {
         new: true,
         runValidators: true,

@@ -1,4 +1,4 @@
-import Bank from '../models/bank.model.js'; 
+import Bank from '../models/bank.model.js';
 
 
 const createBank = async (req, res) => {
@@ -10,12 +10,13 @@ const createBank = async (req, res) => {
       return res.status(400).json({ message: 'All required fields must be provided.' });
     }
 
-   const existingBank = await Bank.findOne({ accountNumber });
+   const existingBank = await Bank.findOne({ accountNumber, companyId: req.user.companyId });
     if (existingBank) {
       return res.status(409).json({ message: 'Bank with this account number already exists.' });
     }
 
-    const newBank = new Bank({   
+    const newBank = new Bank({
+      companyId: req.user.companyId,
       accountType,
       accountName,
       accountCode,
@@ -41,7 +42,7 @@ const createBank = async (req, res) => {
 // Get all bank records
 const getAllBanks = async (req, res) => {
   try {
-    const banks = await Bank.find(); // Retrieve all banks from the database
+    const banks = await Bank.find({ companyId: req.user.companyId }).lean(); // Retrieve all banks from the database
     res.status(200).json(banks);
   } catch (error) {
     console.error('Error retrieving banks:', error);
@@ -52,7 +53,7 @@ const getAllBanks = async (req, res) => {
 // Get a bank record by ID
 const getBankById = async (req, res) => {
   try {
-    const bank = await Bank.findById(req.params.id); // Find bank by ID
+    const bank = await Bank.findOne({ _id: req.params.id, companyId: req.user.companyId }); // Find bank by ID
     if (!bank) {
       return res.status(404).json({ message: 'Bank record not found.' });
     }
@@ -69,8 +70,8 @@ const updateBank = async (req, res) => {
     const { accountType, accountName, accountCode, currency, accountNumber, bankName, ifsc, description, primary } = req.body;
 
     // Find and update the bank record by ID
-    const updatedBank = await Bank.findByIdAndUpdate(
-      req.params.id,
+    const updatedBank = await Bank.findOneAndUpdate(
+      { _id: req.params.id, companyId: req.user.companyId },
       {
         accountType,
         accountName,
@@ -82,7 +83,7 @@ const updateBank = async (req, res) => {
         description,
         primary,
       },
-      { new: true } // Return the updated document
+      { new: true, runValidators: true } // Return the updated document
     );
 
     if (!updatedBank) {
@@ -99,7 +100,7 @@ const updateBank = async (req, res) => {
 // Delete a bank record by ID
 const deleteBank = async (req, res) => {
   try {
-    const deletedBank = await Bank.findByIdAndDelete(req.params.id); // Find and delete the bank record by ID
+    const deletedBank = await Bank.findOneAndDelete({ _id: req.params.id, companyId: req.user.companyId }); // Find and delete the bank record by ID
     if (!deletedBank) {
       return res.status(404).json({ message: 'Bank record not found.' });
     }

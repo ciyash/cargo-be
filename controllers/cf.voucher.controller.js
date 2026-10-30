@@ -1,8 +1,12 @@
+import { sendReport, sendEmptyReport, queryReportPage, sendReportPage, getReportPagination } from "../utils/report-pagination.js";
+import { createVouchers } from "../services/voucher-workflow.js";
+import { sendError } from "../utils/api-error.js";
+import { writableFields } from "../utils/update-fields.js";
 import CFVoucher from '../models/cf.voucher.generate.model.js';
 import { Booking } from '../models/booking.model.js';
 
 
-// Generate the next voucher number  
+// Generate the next voucher number
 const generateVoucher = async () => {
   const lastVoucher = await CFVoucher.findOne().sort({ voucherNo: -1 });
   return lastVoucher ? lastVoucher.voucherNo + 1 : 100;
@@ -10,6 +14,7 @@ const generateVoucher = async () => {
 
 
 const creditForVoucherGenerate = async (req, res) => {
+  const report = payload => sendReport(req, res, payload, 'creditForVoucherGenerate');
   try {
     const { fromDate, toDate, senderName } = req.body;
     const companyId = req.user?.companyId;
@@ -32,7 +37,7 @@ const creditForVoucherGenerate = async (req, res) => {
       bookingDate: { $gte: from, $lte: to },
       agent: { $exists: true, $type: "string", $ne: "" },
       // bookingStatus: 0
-      status: false 
+      status: false
     };
 
     // 🔐 Role-based filtering
@@ -48,14 +53,14 @@ const creditForVoucherGenerate = async (req, res) => {
     }
 
     const bookings = await Booking.find(query)
-      .sort({ bookingDate: -1 })
+      .sort({ bookingDate: -1 , _id: 1 })
       .select("grnNo lrNumber senderName pickUpBranchname dropBranchname bookingStatus grandTotal bookingDate agent");
 
     if (!bookings.length) {
-      return res.status(404).json({ message: "No bookings found" });
+      return sendEmptyReport(req, res, { message: "No bookings found" });
     }
 
-    res.status(200).json(bookings);
+    report(bookings);
   } catch (error) {
     console.error("Error in creditForVoucherGenerate:", error);
     res.status(500).json({ success: false, message: "Server error", error: error.message });
@@ -66,7 +71,7 @@ const creditForVoucherGenerate = async (req, res) => {
 // Create new voucher and update booking statuses
 // const createCFVoucher = async (req, res) => {
 //   try {
-  
+
 //     const companyId = req.user?.companyId;
 //     if (!companyId) return res.status(401).json({ message: "Unauthorized" });
 
@@ -114,87 +119,10 @@ const creditForVoucherGenerate = async (req, res) => {
 
 const createCFVoucher = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
-    if (!companyId) return res.status(401).json({ message: "Unauthorized" });
-
-    const { grnNo } = req.body;
-
-    if (!grnNo || grnNo.length === 0) {
-      return res.status(400).json({ message: "GRNs are required" });
-    }
-
-    const grnList = Array.isArray(grnNo) ? grnNo.map(Number) : [Number(grnNo)];
-
-    // Step 1: Fetch bookings for the GRNs
-    const bookings = await Booking.find({ grnNo: { $in: grnList }, companyId });
-
-    if (!bookings.length) {
-      return res.status(404).json({ message: "No bookings found for the given GRNs" });
-    }
-
-    // Step 2: Group bookings by agent
-    const groupedByAgent = {};
-
-    for (const booking of bookings) {
-      const agent = booking.agent;
-      if (!groupedByAgent[agent]) {
-        groupedByAgent[agent] = [];
-      }
-      groupedByAgent[agent].push(booking);
-    }
-
-    const createdVouchers = [];
-
-    // Step 3: Loop each agent group and create voucher
-    for (const agent in groupedByAgent) {
-      const agentBookings = groupedByAgent[agent];
-
-      const grns = agentBookings.map(b => b.grnNo);
-      const lrs = agentBookings.map(b => b.lrNumber);
-      const fromBranch = agentBookings[0].pickUpBranchname;
-      const toBranch = agentBookings[0].dropBranchname;
-      const consignor = agentBookings[0].senderName;
-
-      const totalCharge = agentBookings.reduce((sum, b) => sum + (b.grandTotal || 0), 0);
-
-      const voucherNo = await generateVoucher();
-
-      const newVoucher = new CFVoucher({
-        companyId,
-        voucherNo,
-        grnNo: grns,
-        lrNumber: lrs,
-        creditForAgent: agent,
-        fromBranch,
-        toBranch,
-        consignor,
-        bookingStatus: 1,
-        charge: totalCharge
-      });
-
-      await newVoucher.save();
-
-      // Update booking statuses
-      await Booking.updateMany(
-        { grnNo: { $in: grns }, companyId },
-        { $set: {status: true } }
-      );
-
-      createdVouchers.push(newVoucher);
-    }
-
-    res.status(201).json({
-      message: "CF Voucher(s) created successfully",
-      count: createdVouchers.length,
-      vouchers: createdVouchers
-    });
-
-  } catch (error) {
-    console.error("Error creating CF Voucher:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
+    const vouchers = await createVouchers(req.body, req.user);
+    return res.status(201).json({ message: 'CF Voucher(s) created successfully', count: vouchers.length, vouchers });
+  } catch (error) { return sendError(res, error); }
 };
-
 
 
 // Get all vouchers for current company
@@ -228,7 +156,7 @@ const updateCFVoucher = async (req, res) => {
     const { id } = req.params;
     const updatedVoucher = await CFVoucher.findOneAndUpdate(
       { _id: id, companyId },
-      req.body,
+      { $set: writableFields(req.body) },
       { new: true }
     );
     if (!updatedVoucher) return res.status(404).json({ message: "CF Voucher not found" });
@@ -253,6 +181,7 @@ const deleteCFVoucher = async (req, res) => {
 
 // Summary of vouchers by date range
 const voucherDetails = async (req, res) => {
+  const report = payload => sendReport(req, res, payload, 'voucherDetails');
   try {
     const { fromDate, toDate, senderName } = req.body;
     const companyId = req.user?.companyId;
@@ -273,12 +202,12 @@ const voucherDetails = async (req, res) => {
 
     const vouchers = await CFVoucher.find(query)
       .select("grnNo voucherNo consignor")
-      .sort({ generateDate: -1 });
+      .sort({ generateDate: -1 , _id: 1 });
 
-    if (!vouchers.length) return res.status(404).json({ message: "No vouchers found" });
+    if (!vouchers.length) return sendEmptyReport(req, res, { message: "No vouchers found" });
 
     const grnNos = vouchers.flatMap(v => v.grnNo);
-    const bookings = await Booking.find({ grnNo: { $in: grnNos }, companyId }).select("grnNo packages grandTotal");
+    const bookings = await Booking.find({ grnNo: { $in: grnNos }, companyId }).sort({ _id: 1 }).select("grnNo packages grandTotal");
 
     const bookingMap = new Map();
     bookings.forEach(b => bookingMap.set(b.grnNo, b));
@@ -303,7 +232,7 @@ const voucherDetails = async (req, res) => {
       };
     });
 
-    res.status(200).json({ totalAmount: totalGrandTotal, data });
+    report({ totalAmount: totalGrandTotal, data });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
@@ -366,7 +295,7 @@ const voucherDetails = async (req, res) => {
 
 //     const senderAddress = bookings.length > 0 ? bookings[0].senderAddress : "";
 
-//     res.status(200).json({
+//     report({
 //       success: true,
 //       senderName,
 //       senderAddress,

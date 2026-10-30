@@ -1,16 +1,17 @@
+import auth from "../config/auth.middleware.js";
 import express from 'express';
 import bankController from '../controllers/bank.controller.js';
 
 const router = express.Router();
 
-router.post('/create', bankController.createBank); 
+router.post('/create', auth, bankController.createBank);
 
-router.get('/get', bankController.getAllBanks); 
+router.get('/get', auth, bankController.getAllBanks);
 
-router.get('/banks/:id', bankController.getBankById); 
+router.get('/banks/:id', auth, bankController.getBankById);
 
-router.patch('/banks/:id', bankController.updateBank); 
+router.patch('/banks/:id', auth, bankController.updateBank);
 
-router.delete('/banks/:id', bankController.deleteBank); 
+router.delete('/banks/:id', auth, bankController.deleteBank);
 
 export default router;

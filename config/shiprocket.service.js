@@ -7,7 +7,8 @@ import axios from "axios";
       {
         email: process.env.SHIPROCKET_EMAIL,
         password: process.env.SHIPROCKET_PASSWORD,
-      }
+      },
+      { timeout: 15000 }
     );
 
     return response.data.token;

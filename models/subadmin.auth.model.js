@@ -13,7 +13,7 @@ const adminSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Branch",
       required: function () {
-        return this.role !== "admin"; 
+        return this.role !== "admin";
       },
     },
 
@@ -29,7 +29,7 @@ const adminSchema = new mongoose.Schema(
         "employee",
         "accountant",
         "superviser",
-        "driver",  
+        "driver",
       ],
       required: true,
     },
@@ -45,5 +45,7 @@ const adminSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+adminSchema.set('toJSON', { transform(doc, result) { delete result.password; delete result.otp; delete result.otpExpires; return result; } });
 
 export default mongoose.model("Subadmin", adminSchema);

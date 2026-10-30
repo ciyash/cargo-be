@@ -17,15 +17,16 @@ const createItem = async (req, res) => {
     if (
       !type ||
       !name ||
-      !salesInfo?.sellingPrice ||
+      salesInfo?.sellingPrice == null ||
       !salesInfo?.account ||
-      !purchaseInfo?.costPrice ||
+      purchaseInfo?.costPrice == null ||
       !purchaseInfo?.account
     ) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
     const newItem = new Item({
+      companyId: req.user.companyId,
       type,
       name,
       unit,
@@ -45,7 +46,7 @@ const createItem = async (req, res) => {
 // Get All Items
 const getItems = async (req, res) => {
   try {
-    const items = await Item.find();
+    const items = await Item.find({ companyId: req.user.companyId }).lean();
     res.status(200).json({ message: 'Items fetched successfully', items });
   } catch (error) {
     console.error('Error fetching items:', error);
@@ -56,7 +57,7 @@ const getItems = async (req, res) => {
 // Get Item by ID
 const getItemById = async (req, res) => {
   try {
-    const item = await Item.findById(req.params.id);
+    const item = await Item.findOne({ _id: req.params.id, companyId: req.user.companyId });
     if (!item) {
       return res.status(404).json({ message: 'Item not found' });
     }
@@ -72,10 +73,10 @@ const updateItem = async (req, res) => {
   try {
     const { type, name, unit, salesInfo, purchaseInfo } = req.body;
 
-    const updatedItem = await Item.findByIdAndUpdate(
-      req.params.id,
+    const updatedItem = await Item.findOneAndUpdate(
+      { _id: req.params.id, companyId: req.user.companyId },
       { type, name, unit, salesInfo, purchaseInfo },
-      { new: true }
+      { new: true, runValidators: true }
     );
 
     if (!updatedItem) {
@@ -92,7 +93,7 @@ const updateItem = async (req, res) => {
 // Delete Item
 const deleteItem = async (req, res) => {
   try {
-    const deletedItem = await Item.findByIdAndDelete(req.params.id);
+    const deletedItem = await Item.findOneAndDelete({ _id: req.params.id, companyId: req.user.companyId });
 
     if (!deletedItem) {
       return res.status(404).json({ message: 'Item not found' });

@@ -1,25 +1,31 @@
+import { sendReport, sendEmptyReport, queryReportPage, sendReportPage, getReportPagination } from "../utils/report-pagination.js";
+import { writableFields } from "../utils/update-fields.js";
+import { recordParcel } from "../services/parcel-workflow.js";
+import { sendError, escapeRegex, dateRange } from "../utils/api-error.js";
 import ParcelUnloading from '../models/parcel.unloading.model.js'
 import ParcelLoading from '../models/pracel.loading.model.js'
 import {Booking} from '../models/booking.model.js'
 import mongoose from 'mongoose';
 
 const getParcelsLoading = async (req, res) => {
+  let databasePagination;
+  const report = payload => sendReportPage(res, payload, databasePagination);
   try {
     const companyId = req.user?.companyId;
-    
+
     if (!companyId) {
       return res.status(401).json({
         success: false,
         message: "Unauthorized: Company ID missing",
-      }); 
-    } 
+      });
+    }
 
     const { fromDate, toDate, fromCity, toCity,branch, bookingType, bookingStatus } = req.body;
 
     if (!fromDate || !toDate) {
       return res.status(400).json({
         success: false,
-        message: "fromDate and toDate are required",  
+        message: "fromDate and toDate are required",
       });
     }
 
@@ -28,17 +34,17 @@ const getParcelsLoading = async (req, res) => {
     const end = new Date(toDate);
     end.setHours(23, 59, 59, 999);
 
-    // Step 1: Get GRNs from 
+    // Step 1: Get GRNs from
     const parcelData = await ParcelLoading.find({
       companyId,
       loadingDate: { $gte: start, $lte: end },
-    });
+    }).sort({ _id: 1 });
 
    if (!parcelData || parcelData.length === 0) {
-      return res.status(200).json({
-      
+      return report({
+
         message: "No parcel unloading found for given date range.",
-        
+
       });
     }
 
@@ -56,9 +62,11 @@ const getParcelsLoading = async (req, res) => {
     if (bookingType) bookingFilter.bookingType = bookingType;
     if (bookingStatus !== undefined) bookingFilter.bookingStatus = bookingStatus;
 
-    const bookings = await Booking.find(bookingFilter);
+    const page = await queryReportPage(Booking.find(bookingFilter).sort({ _id: 1 }), req);
+    const bookings = page.rows;
+    databasePagination = page.pagination;
 
-    return res.status(200).json({
+    return report({
       data: bookings,
     });
   } catch (error) {
@@ -226,100 +234,14 @@ const generateUnloadingVoucher = () => Math.floor(10000 + Math.random() * 90000)
 
 const createParcelUnloading = async (req, res) => {
   try {
-    const { vehicalNumber, branch, lrNumber, grnNo, bookingType } = req.body;
+    const { parcel, bookingDetails } = await recordParcel(req.body, req.user, { unloading: true, branchTransfer: false });
+    return res.status(201).json({
+      message: 'Parcel unloading recorded successfully',
+      data: parcel, bookingDetails,
 
-    const companyId = req.user?.companyId;
-    const unLoadingBy = req.user?.id;
-
-    if (!companyId) {
-      return res.status(403).json({ message: "Unauthorized: Company ID missing" });
-    }
-
-    if (!vehicalNumber) {
-      return res.status(400).json({ message: "vehicalNumber is required" });
-    }
-
-    if (!branch) {
-      return res.status(400).json({ message: "branch is required" });
-    }
-
-    if (!bookingType) {
-      return res.status(400).json({ message: "bookingType is required" });
-    }
-
-    if (!grnNo || !Array.isArray(grnNo) || grnNo.length === 0) {
-      return res.status(400).json({ message: "GRN numbers are required and should be a non-empty array" });
-    }
-
-    const grnNumbers = grnNo.map(num => Number(num));
-
-    if (grnNumbers.some(isNaN)) {
-      return res.status(400).json({ message: "All GRN numbers must be valid numbers" });
-    }
-
-    const currentDate = new Date();
-
-    const existingBookings = await Booking.find({
-      grnNo: { $in: grnNumbers },
-      companyId,
-    });
-
-    const existingGrnNumbers = existingBookings.map(booking => booking.grnNo);
-    const missingGrnNumbers = grnNumbers.filter(grn => !existingGrnNumbers.includes(grn));
-
-    if (missingGrnNumbers.length > 0) {
-      return res.status(400).json({
-        message: "Some GRN numbers do not exist in the system under your company",
-        missingGrnNumbers,
-      });
-    }
-
-    // Update bookings
-    await Booking.updateMany(
-      {
-        grnNo: { $in: grnNumbers },
-        companyId,
-      },
-      {
-        $set: {
-          bookingStatus: 2,
-          unloadingDate: currentDate,
-          unloadingBranch: req.user.branchId || '',
-          unloadingBranchname: req.user?.branchName || '',
-          unloadingByemp: req.user?.name || req.user?.username || '',
-        },
-      }
-    );
-
-    // Create Parcel Unloading document
-    const newParcel = new ParcelUnloading({
-      unLoadingVoucher: generateUnloadingVoucher(),
-      unLoadingBy,
-      branch,
-      vehicalNumber,
-      lrNumber,
-      grnNo: grnNumbers,
-      bookingType,
-      unloadingDate: currentDate,
-      companyId, 
-    });
-
-    await newParcel.save();
-
-    // ✅ Fetch full Booking data again to send in response
-    const bookingDetails = await Booking.find({
-      grnNo: { $in: grnNumbers },
-      companyId,
-    });
-
-    res.status(201).json({
-      message: "Parcel unloading created successfully",
-      data: newParcel,
-      bookingDetails, // ✅ Full Booking records included
     });
   } catch (error) {
-    console.error("Error creating parcel unloading:", error);
-    res.status(500).json({ message: "Error creating parcel unloading", error: error.message });
+    return sendError(res, error);
   }
 };
 
@@ -363,6 +285,8 @@ const getParcelUnloadingById = async (req, res) => {
 };
 
 const getParcelsByFilters = async (req, res) => {
+  let databasePagination;
+  const report = payload => sendReportPage(res, payload, databasePagination);
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
@@ -382,25 +306,27 @@ const getParcelsByFilters = async (req, res) => {
     }
 
     if (fromCity) {
-      query.fromCity = { $regex: new RegExp(`^${fromCity}$`, "i") };
+      query.fromCity = { $regex: new RegExp(`^${escapeRegex(fromCity)}$`, "i") };
     }
     if (toCity) {
-      query.toCity = { $regex: new RegExp(`^${toCity}$`, "i") };
+      query.toCity = { $regex: new RegExp(`^${escapeRegex(toCity)}$`, "i") };
     }
     if (branch) {
-      query.branch = { $regex: new RegExp(`^${branch}$`, "i") };
+      query.branch = { $regex: new RegExp(`^${escapeRegex(branch)}$`, "i") };
     }
     if (vehicleNo) {
-      query.vehicleNo = { $regex: new RegExp(`^${vehicleNo}$`, "i") };
+      query.vehicleNo = { $regex: new RegExp(`^${escapeRegex(vehicleNo)}$`, "i") };
     }
 
-    const parcels = await ParcelUnloading.find(query);
+    const page = await queryReportPage(ParcelUnloading.find(query).sort({ _id: 1 }), req);
+    const parcels = page.rows;
+    databasePagination = page.pagination;
 
-    if (!parcels.length) {
-      return res.status(404).json({ message: "No parcels found" });
+    if (!page.totals.totalRecords) {
+      return sendEmptyReport(req, res, { message: "No parcels found" });
     }
 
-    res.status(200).json({ success: true, data: parcels });
+    report({ success: true, data: parcels });
   } catch (error) {
     res.status(500).json({ message: "Error fetching parcels", error: error.message });
   }
@@ -447,7 +373,7 @@ const updateParcelUnloading = async (req, res) => {
     }
 
     // Update allowed
-    Object.assign(parcel, req.body);
+    Object.assign(parcel, writableFields(req.body));
     await parcel.save();
 
     res.status(200).json({ message: "Parcel unloading updated successfully", data: parcel });
@@ -478,6 +404,8 @@ const deleteParcelUnloading = async (req, res) => {
 };
 
 const getUnloadingReport = async (req, res) => {
+  let databasePagination;
+  const report = payload => sendReportPage(res, payload, databasePagination);
   try {
     const { fromDate, toDate, fromCity, toCity, fromBranch, bookingType } = req.body;
     const companyId = req.user?.companyId;
@@ -493,9 +421,9 @@ const getUnloadingReport = async (req, res) => {
     // Assuming you have a single date field to filter, like unloadingDate
     const query = {
       companyId,
-      unloadingDate: { 
-        $gte: new Date(fromDate + "T00:00:00.000Z"), 
-        $lte: new Date(toDate + "T23:59:59.999Z") 
+      unloadingDate: {
+        $gte: new Date(fromDate + "T00:00:00.000Z"),
+        $lte: new Date(toDate + "T23:59:59.999Z")
       },
       fromCity,
       toCity,
@@ -503,13 +431,15 @@ const getUnloadingReport = async (req, res) => {
       ...(bookingType && { bookingType })
     };
 
-    const unloadingRecords = await ParcelUnloading.find(query);
+    const page = await queryReportPage(ParcelUnloading.find(query).sort({ _id: 1 }), req);
+    const unloadingRecords = page.rows;
+    databasePagination = page.pagination;
 
-    if (unloadingRecords.length === 0) {
-      return res.status(404).json({ success: false, message: "No records found" });
+    if (page.totals.totalRecords === 0) {
+      return sendEmptyReport(req, res, { success: false, message: "No records found" });
     }
 
-    res.status(200).json({ success: true, data: unloadingRecords });
+    report({ success: true, data: unloadingRecords });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -517,6 +447,7 @@ const getUnloadingReport = async (req, res) => {
 
 
 const parcelBranchToBranchUnloading = async (req, res) => {
+  const report = payload => sendReport(req, res, payload, 'parcelBranchToBranchUnloading');
   try {
     const { fromDate, toDate, fromCity, toBranch } = req.body;
     const companyId = req.user?.companyId;
@@ -555,12 +486,12 @@ const parcelBranchToBranchUnloading = async (req, res) => {
       matchStage.dropBranch = toBranch;
     }
 
-    const parcels = await Booking.aggregate([   
+    const parcels = await Booking.aggregate([
       { $match: matchStage },
       { $sort: { loadingDate: -1 } },
     ]);
 
-    res.status(200).json(parcels);
+    report(parcels);
 
   } catch (error) {
     res.status(500).json({
@@ -569,72 +500,21 @@ const parcelBranchToBranchUnloading = async (req, res) => {
     });
   }
 };
- 
+
 
 const parcelBranchToBranchUnloadingPost = async (req, res) => {
   try {
-    const { lrNumber, grnNo, unloadBranch, remarks } = req.body;
-
-    if (!req.user || !req.user.id || !req.user.companyId) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized: User details are missing",
-      });
-    }
-
-    if (!lrNumber || !unloadBranch) {
-      return res.status(400).json({
-        success: false,
-        message: "fromBranch, lrNumber, and unloadBranch are required fields",
-      });
-    }
-
-    if (!grnNo || !Array.isArray(grnNo) || grnNo.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "GRN numbers are required and should be an array",
-      });
-    }
-
-    const unLoadingBy = req.user.id;
-    const companyId = req.user.companyId;
-
-    const bookings = await Booking.find({
-      companyId,
-      grnNo: { $in: grnNo },
-    }).lean();
-
-    if (!bookings.length) {
-      return res.status(404).json({
-        success: false,
-        message: "No bookings found for the provided GRN numbers",
-      });
-    }
-
-    const parcel = new ParcelUnloading({
-      unLoadingVoucher: generateUnloadingVoucher(),
-      unLoadingBy,
-      lrNumber,
-      grnNo,
-      unloadBranch,
-      remarks,
-      companyId,
-    });
-
-    await parcel.save();
-
+    const { parcel, bookingDetails } = await recordParcel(req.body, req.user, { unloading: true, branchTransfer: true });
     return res.status(201).json({
+      message: 'Parcel unloading recorded successfully',
+      data: parcel, bookingDetails,
       success: true,
-      message: "Parcel unloading recorded successfully",
-      data: parcel,
     });
-
   } catch (error) {
-    console.error("Error processing request:", error);
-    return res.status(500).json({ success: false, error: error.message });
+    return sendError(res, error);
   }
 };
- 
+
 
 export default {
     createParcelUnloading,
@@ -648,5 +528,5 @@ export default {
     getUnloadingReport,
     getParcelsLoading,
     parcelBranchToBranchUnloading,
-    parcelBranchToBranchUnloadingPost 
-}      
+    parcelBranchToBranchUnloadingPost
+}

@@ -1,10 +1,12 @@
+import Subadmin from "../models/subadmin.auth.model.js";
+import { escapeRegex } from "../utils/api-error.js";
 import Branch from "../models/branch.model.js";
 
 // Function to generate uniqueId id
 const generateUniqueId = (city, name) => {
   const cityCode = city.substring(0, 2).toUpperCase();
   const nameCode = name.substring(0, 2).toUpperCase();
-  const randomNum = Math.floor(1000 + Math.random() * 9000); 
+  const randomNum = Math.floor(1000 + Math.random() * 9000);
   return `${cityCode}${nameCode}${randomNum}`;
 };
 
@@ -30,7 +32,6 @@ const createBranch = async (req, res) => {
       branchStatus,
       address,
       phone,
-      email,
       pincode,
       state,
       country,
@@ -39,7 +40,7 @@ const createBranch = async (req, res) => {
 
     if (
       !name || !branchType || !city || !location || !address ||
-      !phone || !email || !pincode || !state || !country
+      !phone || !pincode || !state || !country
     ) {
       return res.status(400).json({
         success: false,
@@ -63,8 +64,9 @@ const createBranch = async (req, res) => {
 
     const newBranch = new Branch({
       branchUniqueId,
-      openingBalance,  
+      openingBalance,
       createdBy,
+      createdByCompany: req.user.id ? undefined : companyId,
       name,
       branchType,
       city,
@@ -73,7 +75,6 @@ const createBranch = async (req, res) => {
       branchStatus,
       address,
       phone,
-      email,
       pincode,
       state,
       country,
@@ -117,7 +118,7 @@ const getAllBranches = async (req, res) => {
 const getBranchByUniqueId = async (req, res) => {
   try {
     const { branchUniqueId } = req.params;
-    const { companyId } = req.query;
+    const companyId = req.user.companyId;
 
     const query = { branchUniqueId };
     if (companyId) query.companyId = companyId;
@@ -136,7 +137,7 @@ const getBranchByUniqueId = async (req, res) => {
 const getbranchId = async (req, res) => {
   try {
     const { id } = req.params;
-    const branch = await Branch.findById(id);
+    const branch = await Branch.findOne({ _id: id, companyId: req.user.companyId });
 
     if (!branch) {
       return res.status(404).json({ message: "Branch ID not found!" });
@@ -152,7 +153,9 @@ const updateBranch = async (req, res) => {
     const { id } = req.params;
 
     // Optionally, you could validate companyId here if you want strict company control
-    const updatedBranch = await Branch.findByIdAndUpdate(id, req.body, { new: true });
+    const allowed = ['name', 'openingBalance', 'branchType', 'city', 'location', 'branchDate', 'branchStatus', 'address', 'phone', 'pincode', 'state', 'country', 'alternateMobile'];
+    const updates = Object.fromEntries(allowed.filter(key => key in req.body).map(key => [key, req.body[key]]));
+    const updatedBranch = await Branch.findOneAndUpdate({ _id: id, companyId: req.user.companyId }, { $set: updates }, { new: true, runValidators: true });
 
     if (!updatedBranch) {
       return res.status(404).json({ success: false, message: "Branch not found" });
@@ -171,7 +174,7 @@ const updateBranch = async (req, res) => {
 const deleteBranch = async (req, res) => {
   try {
     const { id } = req.params;
-    const deletedBranch = await Branch.findByIdAndDelete(id);
+    const deletedBranch = await Branch.findOneAndDelete({ _id: id, companyId: req.user.companyId });
 
     if (!deletedBranch) {
       return res.status(404).json({ success: false, message: "Branch not found" });
@@ -185,7 +188,8 @@ const deleteBranch = async (req, res) => {
 
 const getBranchByDateRange = async (req, res) => {
   try {
-    const { startDate, endDate, companyId } = req.body;
+    const { startDate, endDate } = req.body;
+    const companyId = req.user.companyId;
 
     if (!startDate || !endDate) {
       return res.status(400).json({ success: false, message: "Start date and end date are required" });
@@ -221,13 +225,8 @@ const getBranchBySubadminUniqueId = async (req, res) => {
   try {
     const { subadminUniqueId } = req.params;
 
-    // Fetch all branches and populate createdBy
-    const branches = await Branch.find().populate("createdBy", "subadminUniqueId name");
-
-    // Find the branch where createdBy.subadminUniqueId matches
-    const matchedBranch = branches.find(branch =>
-      branch.createdBy && branch.createdBy.subadminUniqueId == subadminUniqueId
-    );
+    const admin = await Subadmin.findOne({ companyId: req.user.companyId, subadminUniqueId }).select('_id').lean();
+    const matchedBranch = admin ? await Branch.findOne({ companyId: req.user.companyId, createdBy: admin._id }).populate('createdBy', 'subadminUniqueId name') : null;
 
     if (!matchedBranch) {
       return res.status(404).json({ message: "Subadmin not found or no branch assigned!" });
@@ -256,7 +255,7 @@ const getBranchCity = async (req, res) => {
 
     // Build query with case-insensitive city match
     const query = {
-      city: { $regex: new RegExp(`^${city}$`, "i") },
+      city: { $regex: new RegExp(`^${escapeRegex(city)}$`, "i") },
       companyId,
     };
 

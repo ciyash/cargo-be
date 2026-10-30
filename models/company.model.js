@@ -18,6 +18,13 @@ const subscriptionSchema = new mongoose.Schema({
 }, { _id: false });
 
 const companySchema = new mongoose.Schema({
+  logoText: { type: String, trim: true, maxlength: 60, default: '' },
+  logoText: { type: String, trim: true, maxlength: 60, default: '' },
+  billing: {
+    freeBookingsUsed: { type: Number, min: 0 },
+    paidUntil: { type: Date, default: null },
+    revision: { type: Number, default: 0 },
+  },
   name: {
     type: String,
     required: true,
@@ -80,7 +87,7 @@ const companySchema = new mongoose.Schema({
   },
   bookingLimit: {
     type: Number,
-    default: 1000, // or any sensible default
+    default: 100,
   },
   subscription: {
     type: subscriptionSchema,
@@ -92,6 +99,8 @@ const companySchema = new mongoose.Schema({
   },
 
 }, { timestamps: true });
+
+companySchema.set('toJSON', { transform(doc, result) { delete result.password; return result; } });
 
 const Company = mongoose.model("Company", companySchema);
 export default Company;

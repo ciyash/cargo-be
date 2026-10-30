@@ -1,9 +1,10 @@
 import mongoose from 'mongoose';
 
 const bankSchema = new mongoose.Schema({
+  companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
   accountType: {
     type: String,
-    enum: ['bank', 'creditCard'], 
+    enum: ['bank', 'creditCard'],
   },
   accountName: {
     type: String,
@@ -27,19 +28,19 @@ const bankSchema = new mongoose.Schema({
   },
   ifsc: {
     type: String,
-    
+
   },
   description: {
-    type: String, 
+    type: String,
     maxlength: 500
   },
   primary: {
     type: Boolean,
-    default: false 
+    default: false
   }
 });
 
 
-export default  mongoose.model('Bank', bankSchema);  
+export default  mongoose.model('Bank', bankSchema);
 
 

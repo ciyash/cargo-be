@@ -3,18 +3,23 @@ import subAdminAuthController from '../controllers/subadmin.auth.controller.js'
 import auth from '../config/auth.middleware.js'
 import companyAuth from '../config/company.auth.js'
 
-const router=express.Router()  
+const requireAdmin = (req, res, next) => {
+  if (req.user.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+  next();
+};
+
+const router=express.Router()
 //
 
-router.post("/delete-person",  subAdminAuthController.deletePersons);
+router.post("/delete-person", auth, requireAdmin, subAdminAuthController.deletePersons);
 
 router.post("/signup-by-company", companyAuth, subAdminAuthController.signup);
 
-router.post("/signup", auth, subAdminAuthController.signup)
+router.post("/signup", auth, requireAdmin, subAdminAuthController.signup)
 
 router.post("/login",subAdminAuthController.login)
 
-router.get("/subadmins",companyAuth,subAdminAuthController.getAllSubadmins)   
+router.get("/subadmins",companyAuth,subAdminAuthController.getAllSubadmins)
 
 router.get("/employees", auth, subAdminAuthController.getAllEmployees);
 
@@ -30,7 +35,7 @@ router.post("/reset-password", auth, subAdminAuthController.resetPassword)
 
 router.post("/forgot-password", auth, subAdminAuthController.forgotPassword)
 
-router.delete("/delete-subadmin", auth, subAdminAuthController.deleteSubadmin);   
+router.delete("/delete-subadmin", auth, subAdminAuthController.deleteSubadmin);
 
 router.get("/branch-wise/:branchName", auth, subAdminAuthController.getSubadminsByBranchName);
 

@@ -1,56 +1,92 @@
-import express from "express";
-import mongoose from "mongoose";
-import dotenv from "dotenv";
-import router from "./routes/index.js";
-import cors from "cors";
-import morgan from "morgan";
+import 'dotenv/config';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'node:url';
+import mongoose from 'mongoose';
+import { createApp } from './app.js';
+import { validateEnvironment } from './config/environment.js';
 
-// import helmet from "helmet";
-// import cron from "node-cron";
-// import branchReportController from "./controllers/branch.report.controller.js";
+// Resolve runtime configuration from this checkout even when launched elsewhere.
+dotenv.config({ path: fileURLToPath(new URL('./.env', import.meta.url)) });
 
-dotenv.config();
+let server;
+let stopping = false;
 
-const PORT = process.env.PORT || 4000;
+// Stop accepting requests, finish pending work, then disconnect MongoDB.
+async function shutdown() {
+  if (stopping) return;
+  stopping = true;
 
-const app = express();
+  const timer = setTimeout(() => {
+    server?.closeAllConnections();
+    process.exit(1);
+  }, 10000);
+  timer.unref();
 
-// app.use(helmet())
+  try {
+    if (server) {
+      await new Promise((resolve, reject) => {
+        server.close(error => {
+          if (error) reject(error);
+          else resolve();
+        });
+      });
+    }
+  } catch {
+    process.exitCode = 1;
+  } finally {
+    try {
+      await mongoose.disconnect();
+    } catch {
+      process.exitCode = 1;
+    }
+    clearTimeout(timer);
+  }
+}
 
-app.use(morgan("dev"))
+async function start() {
+  // 1. Check required settings from .env.
+  const { port } = validateEnvironment();
 
-// const corsOptions = {
-//   origin: [
-//     "http://localhost:4200",
-//     "https://nextlogisticss.com",
-//     "https://nextlogisticss.com/cloud"
-//   ],
-//   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-//   credentials: true,
-// };
+  // 2. Connect to MongoDB before accepting requests.
+  mongoose.set('bufferCommands', false);
+  await mongoose.connect(process.env.MONGO_URI, {
+    serverSelectionTimeoutMS: 10000,
+    maxPoolSize: 20,
+    minPoolSize: 0,
+    autoIndex: process.env.NODE_ENV !== 'production',
+  });
 
-app.use(express.json({ limit: "40mb" }));
-app.use(express.urlencoded({ extended: true }));
+  if (stopping) {
+    await mongoose.disconnect();
+    return;
+  }
 
-// app.use(cors(corsOptions));
-app.use(cors()); 
+  // 3. Start the Express app defined in app.js.
+  const app = createApp();
+  server = app.listen(port, () => {
+    console.log('Server running on port ' + port);
+  });
 
-app.use("/", router);
- 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("mongodb connected successfully"))
-  .catch((error) => console.log("mongodb disconnected", error));
+  server.requestTimeout = 60000;
+  server.headersTimeout = 65000;
 
-app.listen(PORT, () => console.log(`server running on port ${PORT}`));
+  server.on('error', async error => {
+    console.error('HTTP server failed:', error.code || error.name);
+    process.exitCode = 1;
+    await shutdown();
+  });
+}
 
-// --- Cron job setup here ---
-// cron.schedule("0 0 * * *", async () => {
-//   console.log("🕛 Running daily branch snapshot job at midnight");
-//   try {
-//     await branchReportController.createDailyBranchSnapshot();
-//     console.log("✅ Daily snapshot created successfully");
-//   } catch (error) {
-//     console.error("❌ Error running cron job:", error.message);
-//   }
-// });
+// Handle Ctrl+C and deployment stop signals.
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
+
+start().catch(async error => {
+  const message = error.name === 'MongooseServerSelectionError'
+    ? 'Database unavailable'
+    : error.message;
+
+  console.error('Backend startup failed:', message);
+  process.exitCode = 1;
+  await mongoose.disconnect();
+});
