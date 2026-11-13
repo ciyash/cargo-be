@@ -27,7 +27,8 @@ export function createApp() {
   app.use('/workspace', workspaceRouter);
   app.get('/health', (req, res) => {
     const ready = mongoose.connection.readyState === 1;
-    res.status(ready ? 200 : 503).json({ status: ready ? 'ok' : 'unavailable', database: ready ? 'connected' : 'disconnected' });
+    const revision = process.env.RENDER_GIT_COMMIT;
+    res.status(ready ? 200 : 503).json({ status: ready ? 'ok' : 'unavailable', database: ready ? 'connected' : 'disconnected', revision: /^[a-f0-9]{40}$/i.test(revision || '') ? revision : null });
   });
   app.use('/api/owner', ownerRouter);
   app.use('/billing', billingRouter);
