@@ -14,3 +14,17 @@ coverage/
 
 # Local browser test profiles
 .browser-*/
+
+# Local exports, demos, and experimental prototypes
+/PDFs-To-Share/
+/Demo-To-Share/
+/prototypes/
+
+# Generated documentation assets and local document-building scripts
+/docs/*.pdf
+/docs/*.docx
+/docs/*.png
+/docs/*.html
+/docs/*.py
+/docs/check-shipping-flow-layout.mjs
+/docs/render-*-pdf.mjs
