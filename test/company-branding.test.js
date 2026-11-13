@@ -1,11 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import Company from '../models/company.model.js';
-import Subadmin from '../models/subadmin.auth.model.js';
-import { publicBranding, logoMime, logoLetters } from '../utils/company-branding.js';
-import { getCompanyBranding } from '../controllers/company-branding.controller.js';
-import companyController from '../controllers/company.controller.js';
-import staffController from '../controllers/subadmin.auth.controller.js';
+import Company from "../src/models/company.model.js";
+import mongoose from 'mongoose';
+import { QuotaEvent } from "../src/models/logistics.model.js";
+import Subadmin from "../src/models/admin.auth.model.js";
+import { publicBranding, logoMime, logoLetters } from "../src/utils/company-branding.js";
+import { getCompanyBranding } from "../src/controllers/company-branding.controller.js";
+import companyController from "../src/controllers/company.controller.js";
+import staffController from "../src/controllers/admin.auth.controller.js";
 const response = () => ({ code: 200, status(code) { this.code = code; return this; }, set() { return this; }, json(body) { this.body = body; return this; } });
 const id = '507f1f77bcf86cd799439011';
 test('public company branding includes logo text and excludes image and private fields', () => {
@@ -61,7 +63,9 @@ test('logo text rejects objects and overlong input before registration or update
 });
 test('registration saves the supplied logo text without requiring an image', async t => {
   t.mock.method(Company,'findOne',async()=>null);
-  t.mock.method(Company,'create',async data=>{assert.equal(data.logoText,'XY');assert.equal(data.logo,'');return new Company(data);});
+  t.mock.method(mongoose,'startSession',async()=>({withTransaction:fn=>fn(),endSession:async()=>{}}));
+  t.mock.method(QuotaEvent,'create',async rows=>rows);
+  t.mock.method(Company,'create',async ([data])=>{assert.equal(data.logoText,'XY');assert.equal(data.logo,'');return [new Company(data)];});
   const res=response();
   await companyController.registerCompany({body:{name:'Acme',email:'owner@example.com',password:'password123',logoText:'  XY  '}},res);
   assert.equal(res.code,201);

@@ -1,0 +1,33 @@
+import { prepareReportPagination } from "../utils/report-pagination.js";
+import express from "express";
+import parcelUnloadingController from "../controllers/parcel.unloading.controller.js";
+import auth from "../middleware/auth.middleware.js"  
+
+const router = express.Router();
+
+router.post("/parcel-filter-Unloading",auth,prepareReportPagination, parcelUnloadingController.getParcelsLoading)  //loading get
+
+router.get("/grnNo/:grnNo", auth,parcelUnloadingController.getParcelunLoadingByGrnNumber)
+
+router.post("/",auth,parcelUnloadingController.createParcelUnloading)   //post
+
+router.get("/",auth,parcelUnloadingController.getAllParcelUnloadings)
+
+router.get("/:id",auth,parcelUnloadingController.getParcelUnloadingById)
+
+router.get("/voucher/:voucher",auth,parcelUnloadingController.getParcelUnloadingByVoucher)
+
+router.post("/filter",auth,prepareReportPagination, parcelUnloadingController.getParcelsByFilters)
+
+router.patch("/:id",auth,parcelUnloadingController.updateParcelUnloading)
+
+router.delete("/:id",auth,parcelUnloadingController.deleteParcelUnloading)
+
+router.post("/pending-delivery-report",auth,prepareReportPagination, parcelUnloadingController.getUnloadingReport)
+
+router.post("/branch-to-branch-unload",auth,prepareReportPagination, parcelUnloadingController.parcelBranchToBranchUnloading)  //loading
+
+router.post("/branch-to-branch-post",auth,parcelUnloadingController.parcelBranchToBranchUnloadingPost)  //post
+  
+
+export default router

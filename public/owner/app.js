@@ -1,7 +1,8 @@
 const $ = id => document.getElementById(id);
 let page = 1, pages = 0, busy = false;
-const date = value => value ? new Date(value).toLocaleDateString('en-IN', { timeZone: 'UTC' }) : '—';
+const date = value => value ? new Date(value).toLocaleDateString('en-IN', { timeZone: 'UTC' }) : 'â€”';
 const number = value => Number(value).toLocaleString('en-IN');
+const money = (value,currency='INR') => new Intl.NumberFormat('en-IN',{style:'currency',currency}).format(Number(value||0)/100);
 const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 async function api(path, options) {
   const response = await fetch('/api/owner' + path, options);
@@ -16,13 +17,21 @@ function show(signedIn) { $('login').hidden = signedIn; $('dashboard').hidden = 
 function query(currentPage) { return new URLSearchParams({ from: $('from').value, to: $('to').value, search: $('search').value, status: $('status').value, page: currentPage }); }
 async function load() {
   if (busy) return;
-  busy = true; $('message').textContent = 'Loading reports…';
+  busy = true; $('message').textContent = 'Loading reportsâ€¦';
   try {
     const data = await api('/reports?' + query(page));
     show(true); pages = data.pagination.pages;
     const s = data.summary;
-    const metrics = [['Total companies',s.total],['Independent companies',s.independent],['Active subscriptions',s.active],['Blocked companies',s.blocked],['Registrations in range',s.registrations],['Total branches',s.branches],['Bookings in range',s.bookings],['Freight value in range','?' + number(s.freightValue)]];
-    $('cards').innerHTML = metrics.map(([label,value]) => `<div class="card"><span>${label}</span><strong>${typeof value === 'number' ? number(value) : value}</strong></div>`).join('');
+    const revenue=(data.revenue||[]).find(r=>r._id==='INR');
+    const metrics = [['Registered companies',number(s.total),'All-time registrations'],['Companies with quota',number(s.active),'Unblocked, with available bookings'],['Captured platform payments',money(revenue?.amount),'Selected dates | INR'],['Bookings created',number(s.bookings),'Selected dates | includes cancelled'],['Available bookings',number(s.available),'Across all companies'],['Quota exhausted',number(s.exhausted),'Companies needing more bookings'],['Total branches',number(s.branches),number(s.franchises)+' franchise branches'],['New companies',number(s.registrations),'Registered in selected dates']];
+    $('cards').innerHTML = metrics.map(([label,value,hint]) => `<div class="card"><span>${escape(label)}</span><strong>${escape(value)}</strong><small>${escape(hint)}</small></div>`).join('');
+    const percent=Math.min(100,s.granted?s.used/s.granted*100:0);
+    $('quota').innerHTML=`<div class="quota-total">${number(s.used)} <small>of ${number(s.granted)} bookings used</small></div><div class="progress" role="progressbar" aria-label="Company booking quota used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}"><span style="width:${percent}%"></span></div><div class="quota-line"><span>Available for bookings</span><strong>${number(s.available)}</strong></div><div class="quota-line"><span>Pending booking holds</span><strong>${number(s.held)}</strong></div><div class="quota-line"><span>Blocked companies</span><strong>${number(s.blocked)}</strong></div>`;
+    $('network-data').innerHTML=[['Own branches',s.branches-s.franchises],['Franchise branches',s.franchises],['Franchise bookings allocated',s.franchiseAllocated],['Franchise quota used',s.franchiseUsed],['External bookings in range',s.external],['International bookings in range',s.international],['Cancelled bookings in range',s.cancelled]].map(([label,value])=>`<div><span>${label}</span><strong>${number(value)}</strong></div>`).join('');
+    $('couriers').innerHTML=(data.couriers||[]).map(c=>`<div><span>${escape(c._id==='production'?'Production':c._id==='staging'?'Staging / testing':'Environment not set')}</span><strong>${number(c.connected)} connected</strong></div><p>${number(c.enabled)} company accounts with purchased service access</p>`).join('')||'<p>No Delhivery accounts connected yet.</p>';
+    $('revenue').innerHTML=(data.revenue||[]).map(r=>`<div><small>Captured (${escape(r._id)})</small><strong>${escape(money(r.amount,r._id))}</strong><p>Booking packs: ${escape(money(r.bookingPacks,r._id))}<br>Service fees: ${escape(money(r.services,r._id))}</p></div>`).join('')||'<p>No captured platform payments in this period.</p>';
+    $('payment-mode').textContent=data.paymentMode==='test'?'Razorpay test configuration':data.paymentMode==='live'?'Razorpay live configuration':'Payment configuration unavailable';
+    $('payment-rows').innerHTML=(data.recentPayments||[]).map(p=>`<tr><td>${escape(p.companyId?.name||'Company unavailable')}</td><td>${p.purpose==='service'?'Courier service':'Booking pack'}<small>${escape(p.providerKey||'')}</small></td><td>${escape(money(p.amount,p.currency))}</td><td>${number(p.bookings||0)}</td><td><span class="badge ${p.status==='paid'?'paid':'created'}">${p.status==='paid'?'Paid':'Not captured'}</span></td><td>${date(p.createdAt)}<small>${p.paidAt?'Paid '+date(p.paidAt):'Capture not recorded'}</small></td></tr>`).join('')||'<tr><td colspan="6">No payment orders in this period.</td></tr>';
     const max = Math.max(1, ...data.trends.map(row => row.count));
     $('trend').replaceChildren();
     for (const row of data.trends) {
@@ -33,8 +42,8 @@ async function load() {
       line.append(label,track,count); $('trend').append(line);
     }
     if (!data.trends.length) $('trend').textContent = 'No registrations in this period.';
-    $('companies').innerHTML = data.companies.map(c => `<tr><td><strong>${escape(c.name)}</strong><small>${escape(c.state || '—')}</small></td><td>${escape(c.email)}<small>${escape(c.phone || '—')}</small></td><td>${c.parentCompany ? 'Subsidiary' : 'Independent'}</td><td>${date(c.createdAt)}</td><td><span class="badge ${c.status}">${c.status}</span></td><td>${escape(c.subscription?.plan || '—')}<small>${date(c.subscription?.validTill)}</small></td><td>${c.branches}</td><td>${c.bookings}</td></tr>`).join('') || '<tr><td colspan="8">No companies match these filters.</td></tr>';
-    $('pagination').textContent = `${number(data.pagination.total)} companies · Page ${page} of ${pages || 1}`;
+    $('companies').innerHTML = data.companies.map(c => `<tr><td><strong>${escape(c.name)}</strong><small>${escape(c.email)}</small><small>${escape(c.state||'')} | ${escape(c.operatingCategories||'both')}</small></td><td><span class="badge ${['active','blocked','exhausted'].includes(c.status)?c.status:'exhausted'}">${c.status==='active'?'Available quota':c.status==='blocked'?'Blocked':'Quota exhausted'}</span></td><td>${number(c.branches)} branches<small>${number(c.franchises)} franchises</small></td><td>${number(c.quota.total)}</td><td>${number(c.quota.used)} used<small>${number(c.quota.held)} held</small></td><td><strong>${number(c.quota.available)}</strong></td><td>${number(c.bookings)}</td></tr>`).join('') || '<tr><td colspan="7">No companies match these filters.</td></tr>';
+    $('pagination').textContent = `${number(data.pagination.total)} companies Â· Page ${page} of ${pages || 1}`;
     $('previous').disabled = page <= 1; $('next').disabled = page >= pages;
     $('updated').textContent = 'Updated ' + new Date(data.generatedAt).toLocaleString('en-IN');
     $('message').textContent = '';
@@ -54,14 +63,14 @@ $('next').onclick = () => { if (!busy && page < pages) { page++; load(); } };
 $('export').onclick = async () => {
   $('export').disabled = true;
   try {
-    const rows = [['Company','Email','Phone','Type','Registered UTC','Status','Plan','Expiry UTC','Branches','Bookings in range']];
+    const rows = [['Company','Email','Phone','Registered UTC','Booking access','Branches','Franchises','Quota total','Used','Held','Available','Bookings in range']];
     for (let p = 1, end = 1; p <= end; p++) {
       const data = await api('/reports?' + query(p)); end = data.pagination.pages;
-      for (const c of data.companies) rows.push([c.name,c.email,c.phone,c.parentCompany ? 'Subsidiary':'Independent',date(c.createdAt),c.status,c.subscription?.plan,date(c.subscription?.validTill),c.branches,c.bookings]);
+      for (const c of data.companies) rows.push([c.name,c.email,c.phone,date(c.createdAt),c.status,c.branches,c.franchises,c.quota.total,c.quota.used,c.quota.held,c.quota.available,c.bookings]);
     }
     const csv = rows.map(row => row.map(value => '"' + String(value ?? '').replace(/^[=+@\-\t\r]/, "'$&").replace(/"/g,'""') + '"').join(',')).join('\r\n');
     const url = URL.createObjectURL(new Blob(['\uFEFF' + csv],{type:'text/csv;charset=utf-8'}));
-    const link = document.createElement('a'); link.href = url; link.download = 'cargo-companies.csv'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    const link = document.createElement('a'); link.href = url; link.download = 'ciyash-companies.csv'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   } catch(error) { $('message').textContent = error.message; }
   finally { $('export').disabled = false; }
 };

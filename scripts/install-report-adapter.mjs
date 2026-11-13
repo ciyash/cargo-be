@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import router from '../routes/index.js';
-import { REPORT_PATHS } from '../utils/report-pagination.js';
+import router from "../src/routes/index.js";
+import { REPORT_PATHS } from "../src/utils/report-pagination.js";
 const root = path.resolve('../crm-frontend/src/app');
 const config = {};
 for (const mount of router.stack) {

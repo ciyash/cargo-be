@@ -6,3 +6,11 @@ coverage/
 *.log
 .frontend-build-check/
 .browser-compact-header/
+.frontend-build-current/
+.crm-implementation/
+.browser-logistics/
+.private-db-backups/
+.private-db-backups/
+
+# Local browser test profiles
+.browser-*/

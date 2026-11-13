@@ -201,6 +201,193 @@
       "name": "company",
       "item": [
         {
+          "name": "GET /company/branding",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{companyToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/company/branding",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "company",
+                "branding"
+              ]
+            },
+            "description": "Source: src/routes/company.router.js. Requires companyToken. Sample fields must be replaced with your test data."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /company/register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/company/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "company",
+                "register"
+              ]
+            },
+            "description": "Source: src/routes/company.router.js -> src/controllers/company.controller.js (registerCompany). No authentication middleware on this route. Sample fields must be replaced with your test data.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /company/login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/company/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "company",
+                "login"
+              ]
+            },
+            "description": "Source: src/routes/company.router.js -> src/controllers/company.controller.js (loginCompany). No authentication middleware on this route. Sample fields must be replaced with your test data.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{companyEmail}}\",\n  \"password\": \"{{companyPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  const data = pm.response.json();",
+                  "  if (data.token) pm.collectionVariables.set('companyToken', data.token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /company/branches",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{companyToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/company/branches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "company",
+                "branches"
+              ]
+            },
+            "description": "Source: src/routes/company.router.js -> src/controllers/branch.controller.js (getAllBranches). Requires companyToken. Sample fields must be replaced with your test data."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /company/branches",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{companyToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/company/branches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "company",
+                "branches"
+              ]
+            },
+            "description": "Source: src/routes/company.router.js -> src/controllers/branch.controller.js (createBranch). Requires companyToken. Sample fields must be replaced with your test data.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sample\",\n  \"openingBalance\": 0,\n  \"branchType\": \"normal\",\n  \"city\": \"{{city}}\",\n  \"cityId\": \"Sample cityId\",\n  \"location\": \"Main Road\",\n  \"branchDate\": \"{{date}}\",\n  \"branchStatus\": \"Sample branchStatus\",\n  \"address\": \"Sample street\",\n  \"phone\": \"9000000001\",\n  \"pincode\": 500001,\n  \"state\": \"Telangana\",\n  \"country\": \"India\",\n  \"alternateMobile\": \"Sample alternateMobile\",\n  \"ownershipType\": \"Sample ownershipType\",\n  \"servicePostalCodes\": \"Sample servicePostalCodes\",\n  \"courierPickupLocation\": \"Sample courierPickupLocation\",\n  \"delhiveryPickupLocation\": \"Sample delhiveryPickupLocation\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
           "name": "POST /company/subsidiary/register",
           "request": {
             "method": "POST",
@@ -224,10 +411,10 @@
                 "register"
               ]
             },
-            "description": "Source: routes/company.router.js -> controllers/company.controller.js (registerSubsidiaryCompany). No authentication middleware on this route. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/company.router.js -> src/controllers/company.controller.js (registerSubsidiaryCompany). No authentication middleware on this route. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Sample\",\n  \"email\": \"{{companyEmail}}\",\n  \"password\": \"{{companyPassword}}\",\n  \"parentCompanyId\": null,\n  \"phone\": \"9000000001\",\n  \"address\": \"Sample street\",\n  \"state\": \"Telangana\",\n  \"customerName\": \"Sample customerName\"\n}",
+              "raw": "{\n  \"name\": \"Sample\",\n  \"email\": \"{{companyEmail}}\",\n  \"password\": \"{{companyPassword}}\",\n  \"parentCompanyId\": null,\n  \"phone\": \"9000000001\",\n  \"address\": \"Sample street\",\n  \"state\": \"Telangana\",\n  \"customerName\": \"Sample customerName\",\n  \"logoText\": \"Sample logoText\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -261,7 +448,7 @@
                 "login"
               ]
             },
-            "description": "Source: routes/company.router.js -> controllers/company.controller.js (loginCompany). No authentication middleware on this route. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/company.router.js -> src/controllers/company.controller.js (loginCompany). No authentication middleware on this route. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"{{companyEmail}}\",\n  \"password\": \"{{companyPassword}}\"\n}",
@@ -318,7 +505,7 @@
                 "company-access"
               ]
             },
-            "description": "Source: routes/company.router.js -> controllers/company.controller.js (checkCompanyAccess). Requires companyToken. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/company.router.js -> src/controllers/company.controller.js (checkCompanyAccess). Requires companyToken. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{}",
@@ -356,7 +543,7 @@
                 "get-companies"
               ]
             },
-            "description": "Source: routes/company.router.js -> controllers/company.controller.js (getAllCompanies). Requires companyToken. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/company.router.js -> src/controllers/company.controller.js (getAllCompanies). Requires companyToken. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -390,10 +577,10 @@
                 "update"
               ]
             },
-            "description": "Source: routes/company.router.js -> controllers/company.controller.js (updateCompany). Requires companyToken. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/company.router.js -> src/controllers/company.controller.js (updateCompany). Requires companyToken. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Updated Company\"\n}",
+              "raw": "{\n  \"logoText\": \"Sample logoText\",\n  \"password\": \"{{password}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -429,7 +616,7 @@
                 "{{parentCompanyId}}"
               ]
             },
-            "description": "Source: routes/company.router.js -> controllers/company.controller.js (getSubsidiaries). Requires companyToken. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/company.router.js -> src/controllers/company.controller.js (getSubsidiaries). Requires companyToken. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -459,7 +646,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/company.router.js -> controllers/company.controller.js (deleteCompany). Requires companyToken. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/company.router.js -> src/controllers/company.controller.js (deleteCompany). Requires companyToken. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -493,10 +680,10 @@
                 "subscription"
               ]
             },
-            "description": "Source: routes/company.router.js -> controllers/company.controller.js (setSubscription). Requires companyToken. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/company.router.js. Requires companyToken. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"plan\": \"monthly\",\n  \"bookingLimit\": 1000\n}",
+              "raw": "{}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -526,7 +713,7 @@
                 "{{companyId}}"
               ]
             },
-            "description": "Source: routes/company.router.js -> controllers/company.controller.js (checkMembershipStatus). No authentication middleware on this route. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/company.router.js -> src/controllers/company.controller.js (checkMembershipStatus). No authentication middleware on this route. Sample fields must be replaced with your test data."
           },
           "response": []
         }
@@ -565,7 +752,7 @@
                 "delete-person"
               ]
             },
-            "description": "Source: routes/subadmin.auth.route.js -> controllers/subadmin.auth.controller.js (deletePersons). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/admin.auth.route.js -> src/controllers/admin.auth.controller.js (deletePersons). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"id\": \"{{id}}\"\n}",
@@ -608,10 +795,10 @@
                 "signup-by-company"
               ]
             },
-            "description": "Source: routes/subadmin.auth.route.js -> controllers/subadmin.auth.controller.js (signup). Requires companyToken. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/admin.auth.route.js -> src/controllers/admin.auth.controller.js (signup). Requires companyToken. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Sample\",\n  \"username\": \"sample_admin\",\n  \"address\": \"Sample street\",\n  \"phone\": \"9000000001\",\n  \"email\": \"sample@example.com\",\n  \"password\": \"{{password}}\",\n  \"branchId\": \"{{branchId}}\",\n  \"location\": \"Main Road\",\n  \"documents\": [],\n  \"role\": \"admin\"\n}",
+              "raw": "{\n  \"name\": \"Sample\",\n  \"username\": \"sample_admin\",\n  \"address\": \"Sample street\",\n  \"phone\": \"9000000001\",\n  \"email\": \"sample@example.com\",\n  \"password\": \"{{password}}\",\n  \"branchId\": \"{{branchId}}\",\n  \"location\": \"Main Road\",\n  \"documents\": [],\n  \"role\": \"company_admin\",\n  \"branchCity\": \"Sample branchCity\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -651,10 +838,10 @@
                 "signup"
               ]
             },
-            "description": "Source: routes/subadmin.auth.route.js -> controllers/subadmin.auth.controller.js (signup). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/admin.auth.route.js -> src/controllers/admin.auth.controller.js (signup). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Sample\",\n  \"username\": \"sample_admin\",\n  \"address\": \"Sample street\",\n  \"phone\": \"9000000001\",\n  \"email\": \"sample@example.com\",\n  \"password\": \"{{password}}\",\n  \"branchId\": \"{{branchId}}\",\n  \"location\": \"Main Road\",\n  \"documents\": [],\n  \"role\": \"admin\"\n}",
+              "raw": "{\n  \"name\": \"Sample\",\n  \"username\": \"sample_admin\",\n  \"address\": \"Sample street\",\n  \"phone\": \"9000000001\",\n  \"email\": \"sample@example.com\",\n  \"password\": \"{{password}}\",\n  \"branchId\": \"{{branchId}}\",\n  \"location\": \"Main Road\",\n  \"documents\": [],\n  \"role\": \"company_admin\",\n  \"branchCity\": \"Sample branchCity\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -687,10 +874,10 @@
                 "login"
               ]
             },
-            "description": "Source: routes/subadmin.auth.route.js -> controllers/subadmin.auth.controller.js (login). No authentication middleware on this route. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/admin.auth.route.js -> src/controllers/admin.auth.controller.js (login). No authentication middleware on this route. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"identifier\": \"{{identifier}}\",\n  \"password\": \"{{password}}\"\n}",
+              "raw": "{\n  \"identifier\": \"{{identifier}}\",\n  \"password\": \"{{password}}\",\n  \"companyId\": \"{{companyId}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -739,7 +926,7 @@
                 "subadmins"
               ]
             },
-            "description": "Source: routes/subadmin.auth.route.js -> controllers/subadmin.auth.controller.js (getAllSubadmins). Requires companyToken. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/admin.auth.route.js -> src/controllers/admin.auth.controller.js (getAllAdmins). Requires companyToken. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -768,7 +955,7 @@
                 "employees"
               ]
             },
-            "description": "Source: routes/subadmin.auth.route.js -> controllers/subadmin.auth.controller.js (getAllEmployees). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/admin.auth.route.js -> src/controllers/admin.auth.controller.js (getAllEmployees). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -797,7 +984,7 @@
                 "profile"
               ]
             },
-            "description": "Source: routes/subadmin.auth.route.js -> controllers/subadmin.auth.controller.js (getSubadminById). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/admin.auth.route.js -> src/controllers/admin.auth.controller.js (getAdminById). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -831,7 +1018,7 @@
                 "admin-profile"
               ]
             },
-            "description": "Source: routes/subadmin.auth.route.js -> controllers/subadmin.auth.controller.js (updateAdmin). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/admin.auth.route.js -> src/controllers/admin.auth.controller.js (updateAdmin). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"sample@example.com\",\n  \"phone\": \"9000000001\",\n  \"name\": \"Sample\",\n  \"location\": \"Main Road\",\n  \"branchId\": \"{{branchId}}\",\n  \"address\": \"Sample street\",\n  \"password\": \"{{password}}\",\n  \"documents\": []\n}",
@@ -875,10 +1062,54 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/subadmin.auth.route.js -> controllers/subadmin.auth.controller.js (updateSubadmin). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/admin.auth.route.js -> src/controllers/admin.auth.controller.js (updateAccount). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"sample@example.com\",\n  \"phone\": \"9000000001\",\n  \"name\": \"Sample\",\n  \"location\": \"Main Road\",\n  \"documents\": [],\n  \"address\": \"Sample street\",\n  \"password\": \"{{password}}\"\n}",
+              "raw": "{\n  \"name\": \"Sample\",\n  \"email\": \"sample@example.com\",\n  \"username\": \"sample_admin\",\n  \"phone\": \"9000000001\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /subadmin-auth/account-status/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{companyToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/subadmin-auth/account-status/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "subadmin-auth",
+                "account-status",
+                "{{id}}"
+              ]
+            },
+            "description": "Source: src/routes/admin.auth.route.js -> src/controllers/admin.auth.controller.js (updateAccountStatus). Requires companyToken. Sample fields must be replaced with your test data.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isBlocked\": \"Sample isBlocked\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -918,7 +1149,7 @@
                 "change-password"
               ]
             },
-            "description": "Source: routes/subadmin.auth.route.js -> controllers/subadmin.auth.controller.js (changeSubadminPassword). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/admin.auth.route.js -> src/controllers/admin.auth.controller.js (changeAdminPassword). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"oldPassword\": \"{{password}}\",\n  \"newPassword\": \"NewPassword123!\"\n}",
@@ -961,7 +1192,7 @@
                 "reset-password"
               ]
             },
-            "description": "Source: routes/subadmin.auth.route.js -> controllers/subadmin.auth.controller.js (resetPassword). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/admin.auth.route.js -> src/controllers/admin.auth.controller.js (resetPassword). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"sample@example.com\",\n  \"otp\": \"123456\",\n  \"newPassword\": \"NewPassword123!\"\n}",
@@ -1004,7 +1235,7 @@
                 "forgot-password"
               ]
             },
-            "description": "Source: routes/subadmin.auth.route.js -> controllers/subadmin.auth.controller.js (forgotPassword). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/admin.auth.route.js -> src/controllers/admin.auth.controller.js (forgotPassword). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"sample@example.com\"\n}",
@@ -1042,7 +1273,7 @@
                 "delete-subadmin"
               ]
             },
-            "description": "Source: routes/subadmin.auth.route.js -> controllers/subadmin.auth.controller.js (deleteSubadmin). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/admin.auth.route.js -> src/controllers/admin.auth.controller.js (deleteAdmin). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -1077,7 +1308,7 @@
                 "{{branchName}}"
               ]
             },
-            "description": "Source: routes/subadmin.auth.route.js -> controllers/subadmin.auth.controller.js (getSubadminsByBranchName). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/admin.auth.route.js -> src/controllers/admin.auth.controller.js (getAdminsByBranchName). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"branchName\": \"{{branchName}}\"\n}",
@@ -1124,10 +1355,10 @@
                 "branch"
               ]
             },
-            "description": "Source: routes/branch.route.js -> controllers/branch.controller.js (createBranch). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/branch.route.js -> src/controllers/branch.controller.js (createBranch). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Sample\",\n  \"openingBalance\": 0,\n  \"branchType\": \"normal\",\n  \"city\": \"{{city}}\",\n  \"location\": \"Main Road\",\n  \"branchDate\": \"{{date}}\",\n  \"branchStatus\": \"Sample branchStatus\",\n  \"address\": \"Sample street\",\n  \"phone\": \"9000000001\",\n  \"email\": \"sample@example.com\",\n  \"pincode\": 500001,\n  \"state\": \"Telangana\",\n  \"country\": \"India\",\n  \"alternateMobile\": \"Sample alternateMobile\"\n}",
+              "raw": "{\n  \"name\": \"Sample\",\n  \"openingBalance\": 0,\n  \"branchType\": \"normal\",\n  \"city\": \"{{city}}\",\n  \"cityId\": \"Sample cityId\",\n  \"location\": \"Main Road\",\n  \"branchDate\": \"{{date}}\",\n  \"branchStatus\": \"Sample branchStatus\",\n  \"address\": \"Sample street\",\n  \"phone\": \"9000000001\",\n  \"pincode\": 500001,\n  \"state\": \"Telangana\",\n  \"country\": \"India\",\n  \"alternateMobile\": \"Sample alternateMobile\",\n  \"ownershipType\": \"Sample ownershipType\",\n  \"servicePostalCodes\": \"Sample servicePostalCodes\",\n  \"courierPickupLocation\": \"Sample courierPickupLocation\",\n  \"delhiveryPickupLocation\": \"Sample delhiveryPickupLocation\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1161,7 +1392,7 @@
                 "branch"
               ]
             },
-            "description": "Source: routes/branch.route.js -> controllers/branch.controller.js (getAllBranches). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/branch.route.js -> src/controllers/branch.controller.js (getAllBranches). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -1191,7 +1422,7 @@
                 "{{branchUniqueId}}"
               ]
             },
-            "description": "Source: routes/branch.route.js -> controllers/branch.controller.js (getBranchByUniqueId). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/branch.route.js -> src/controllers/branch.controller.js (getBranchByUniqueId). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -1221,7 +1452,7 @@
                 "{{subadminUniqueId}}"
               ]
             },
-            "description": "Source: routes/branch.route.js -> controllers/branch.controller.js (getBranchBySubadminUniqueId). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/branch.route.js -> src/controllers/branch.controller.js (getBranchByAdminUniqueId). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -1255,7 +1486,7 @@
                 "dateRange"
               ]
             },
-            "description": "Source: routes/branch.route.js -> controllers/branch.controller.js (getBranchByDateRange). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/branch.route.js -> src/controllers/branch.controller.js (getBranchByDateRange). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"startDate\": \"{{fromDate}}\",\n  \"endDate\": \"{{toDate}}\"\n}",
@@ -1293,7 +1524,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/branch.route.js -> controllers/branch.controller.js (getbranchId). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/branch.route.js -> src/controllers/branch.controller.js (getbranchId). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -1328,10 +1559,10 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/branch.route.js -> controllers/branch.controller.js (updateBranch). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/branch.route.js -> src/controllers/branch.controller.js (updateBranch). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Updated Branch\"\n}",
+              "raw": "{\n  \"cityId\": \"Sample cityId\",\n  \"city\": \"{{city}}\",\n  \"country\": \"India\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1367,7 +1598,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/branch.route.js -> controllers/branch.controller.js (deleteBranch). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/branch.route.js -> src/controllers/branch.controller.js (deleteBranch). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -1403,7 +1634,7 @@
                 }
               ]
             },
-            "description": "Source: routes/branch.route.js -> controllers/branch.controller.js (getBranchCity). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/branch.route.js -> src/controllers/branch.controller.js (getBranchCity). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         }
@@ -1437,7 +1668,7 @@
                 "users"
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (getAllUsers). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (getAllUsers). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -1473,7 +1704,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (getUsersBySearch). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (getUsersBySearch). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -1503,7 +1734,7 @@
                 "{{senderMobile}}"
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (getUserByMobile). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (getUserByMobile). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -1533,7 +1764,7 @@
                 "credit"
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (getCreditBookings). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (getCreditBookings). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -1564,7 +1795,7 @@
                 "{{phone}}"
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (deleteUserByPhone). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (deleteUserByPhone). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -1597,7 +1828,7 @@
                 "booking"
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (createBooking). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (createBooking). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": \"{{toCity}}\",\n  \"pickUpBranch\": \"{{pickUpBranch}}\",\n  \"dropBranch\": \"{{dropBranch}}\",\n  \"dispatchType\": \"Road\",\n  \"bookingType\": \"paid\",\n  \"packages\": [\n    {\n      \"quantity\": 1,\n      \"packageType\": \"Box\",\n      \"contains\": \"Clothes\",\n      \"weight\": 5,\n      \"unitPrice\": 100,\n      \"totalPrice\": 100,\n      \"actulWeight\": \"5\"\n    }\n  ],\n  \"senderName\": \"Test Sender\",\n  \"senderMobile\": 9000000001,\n  \"senderAddress\": \"Hyderabad\",\n  \"receiverName\": \"Test Receiver\",\n  \"receiverMobile\": 9000000002,\n  \"receiverAddress\": \"Vijayawada\",\n  \"grandTotal\": 100,\n  \"serviceCharges\": 0,\n  \"hamaliCharges\": 0,\n  \"doorDeliveryCharges\": 0,\n  \"doorPickupCharges\": 0,\n  \"parcelGstAmount\": 0,\n  \"valueOfGoods\": 0,\n  \"items\": 1\n}",
@@ -1634,7 +1865,7 @@
                 "booking"
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (getAllBookings). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (getAllBookings). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -1663,7 +1894,7 @@
                 "todaybookings"
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (toDayBookings). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (toDayBookings). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -1693,7 +1924,7 @@
                 "{{grnNo}}"
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (getBookingByGrnNo). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (getBookingByGrnNo). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -1723,7 +1954,7 @@
                 "{{adminUniqueId}}"
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (getBookingadminUniqueId). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (getBookingadminUniqueId). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -1757,7 +1988,7 @@
                 "search-data"
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (getBookingsByAnyField). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (getBookingsByAnyField). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"mobile\": \"9000000001\",\n  \"searchCustomer\": \"Test Sender\",\n  \"grnNo\": \"{{grnNo}}\",\n  \"lrNumber\": \"{{lrNumber}}\"\n}",
@@ -1805,7 +2036,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (getAllBookingsPages). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (getAllBookingsPages). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -1838,7 +2069,7 @@
                 "{{vehicalNumber}}"
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (getBookingsfromCityTotoCity). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (getBookingsfromCityTotoCity). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -1872,7 +2103,7 @@
                 "get-lrNumber"
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (getBookinglrNumber). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (getBookinglrNumber). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"lrNumber\": \"{{lrNumber}}\"\n}",
@@ -1910,7 +2141,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (deleteBookings). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (deleteBookings). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -1944,7 +2175,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (updateBookings). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (updateBookings). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"remarks\": \"Updated booking\"\n}",
@@ -1988,7 +2219,7 @@
                 "{{grnNo}}"
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (updateGRNBookings). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (updateGRNBookings). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"remarks\": \"Updated booking\"\n}",
@@ -2031,7 +2262,7 @@
                 "updateAllGrnNumbers"
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (updateAllGrnNumbers). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (updateAllGrnNumbers). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"grnNumbers\": [\n    1001\n  ],\n  \"updateFields\": {\n    \"remarks\": \"Updated during testing\"\n  }\n}",
@@ -2074,7 +2305,7 @@
                 "delivery-booking"
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (deliveryBooking). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (deliveryBooking). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"grnNo\": 1001,\n  \"receiverName\": \"Test Receiver\",\n  \"receiverMobile\": 9000000002,\n  \"toPayDeliveredAmount\": 100\n}",
@@ -2112,7 +2343,7 @@
                 "get-deliveries"
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (getAllDeliveries). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (getAllDeliveries). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -2147,7 +2378,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (updateDelivery). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (updateDelivery). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"receiverName\": \"Updated Receiver\"\n}",
@@ -2191,10 +2422,10 @@
                 "{{grnNo}}"
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (cancelBooking). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (cancelBooking). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"refundAmount\": 0,\n  \"cancelDate\": \"{{date}}\",\n  \"cancelByUser\": \"{{id}}\",\n  \"cancelBranch\": \"Sample cancelBranch\",\n  \"cancelCity\": \"Sample cancelCity\"\n}",
+              "raw": "{}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2235,7 +2466,7 @@
                 "{{grnNo}}"
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (markParcelAsMissing). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (markParcelAsMissing). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"missingReason\": \"Test missing report\",\n  \"missingDate\": \"{{date}}\",\n  \"missingByUser\": \"{{id}}\"\n}",
@@ -2288,7 +2519,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (deliveryReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (deliveryReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"deliveryBranch\": \"{{pickUpBranch}}\"\n}",
@@ -2361,7 +2592,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (parcelBookingReports). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (parcelBookingReports). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": \"{{toCity}}\",\n  \"bookingStatus\": 0,\n  \"bookingType\": \"paid\",\n  \"branch\": \"{{pickUpBranch}}\"\n}",
@@ -2434,7 +2665,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (allParcelBookingReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (allParcelBookingReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"startDate\": \"{{fromDate}}\",\n  \"endDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": \"{{toCity}}\",\n  \"pickUpBranch\": \"{{pickUpBranch}}\",\n  \"dropBranch\": \"{{dropBranch}}\",\n  \"bookingStatus\": 0,\n  \"vehicalNumber\": \"{{vehicalNumber}}\"\n}",
@@ -2507,7 +2738,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (parcelReportSerialNo). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (parcelReportSerialNo). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": \"{{toCity}}\"\n}",
@@ -2580,7 +2811,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (parcelCancelReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (parcelCancelReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": \"{{toCity}}\",\n  \"bookingType\": \"paid\"\n}",
@@ -2653,7 +2884,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (parcelBookingSummaryReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (parcelBookingSummaryReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": \"{{toCity}}\",\n  \"pickUpBranch\": \"{{pickUpBranch}}\",\n  \"dropBranch\": \"{{dropBranch}}\"\n}",
@@ -2726,7 +2957,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (parcelBookingMobileNumber). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (parcelBookingMobileNumber). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"mobile\": \"9000000001\",\n  \"bookingType\": \"paid\",\n  \"bookingStatus\": 0,\n  \"reportType\": \"sender\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"pickUpBranch\": \"{{pickUpBranch}}\"\n}",
@@ -2799,7 +3030,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (regularCustomerBooking). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (regularCustomerBooking). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": \"{{toCity}}\",\n  \"pickUpBranch\": \"{{pickUpBranch}}\",\n  \"dropBranch\": \"{{dropBranch}}\",\n  \"name\": \"Sample\"\n}",
@@ -2872,7 +3103,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (branchWiseCollectionReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (branchWiseCollectionReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"pickUpBranch\": \"{{pickUpBranch}}\",\n  \"bookedBy\": \"{{id}}\"\n}",
@@ -2945,7 +3176,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (collectionforSummaryReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (collectionforSummaryReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"pickUpBranch\": \"{{pickUpBranch}}\",\n  \"bookedBy\": \"{{id}}\"\n}",
@@ -3018,7 +3249,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (collectionReportToPay). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (collectionReportToPay). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"pickUpBranch\": \"{{pickUpBranch}}\",\n  \"bookedBy\": \"{{id}}\"\n}",
@@ -3091,7 +3322,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (allCollectionReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (allCollectionReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"pickUpBranch\": \"{{pickUpBranch}}\",\n  \"bookedBy\": \"{{id}}\"\n}",
@@ -3164,7 +3395,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (bookingTypeWiseCollection). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (bookingTypeWiseCollection). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"pickUpBranch\": \"{{pickUpBranch}}\",\n  \"bookedBy\": \"{{id}}\"\n}",
@@ -3237,7 +3468,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (parcelBranchConsolidatedReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (parcelBranchConsolidatedReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"pickUpBranch\": \"{{pickUpBranch}}\"\n}",
@@ -3310,7 +3541,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (consolidatedReportBranch). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (consolidatedReportBranch). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"pickUpBranch\": \"{{pickUpBranch}}\",\n  \"toCity\": \"{{toCity}}\"\n}",
@@ -3373,7 +3604,7 @@
                 "parcel-branch-wise-gst-report"
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (parcelBranchWiseGSTReport). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (parcelBranchWiseGSTReport). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"pickUpBranch\": \"{{pickUpBranch}}\"\n}",
@@ -3426,7 +3657,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (senderReceiverGSTReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (senderReceiverGSTReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"branchCity\": \"Sample branchCity\",\n  \"branchName\": \"{{branchName}}\"\n}",
@@ -3499,7 +3730,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (pendingDeliveryStockReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (pendingDeliveryStockReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": \"{{toCity}}\",\n  \"pickUpBranch\": \"{{pickUpBranch}}\",\n  \"dropBranch\": \"{{dropBranch}}\",\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\"\n}",
@@ -3572,7 +3803,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (parcelStatusDateDifferenceReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (parcelStatusDateDifferenceReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"startDate\": \"{{fromDate}}\",\n  \"endDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": \"{{toCity}}\",\n  \"bookingStatus\": 0\n}",
@@ -3645,7 +3876,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (pendingDeliveryLuggageReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (pendingDeliveryLuggageReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": \"{{toCity}}\",\n  \"pickUpBranch\": \"{{pickUpBranch}}\",\n  \"dropBranch\": \"{{dropBranch}}\",\n  \"bookingType\": \"paid\"\n}",
@@ -3718,7 +3949,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (parcelReceivedStockReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (parcelReceivedStockReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": \"{{toCity}}\",\n  \"pickUpBranch\": \"{{pickUpBranch}}\",\n  \"dropBranch\": \"{{dropBranch}}\",\n  \"receiverName\": \"Test Receiver\"\n}",
@@ -3791,7 +4022,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (deliveredStockReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (deliveredStockReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": \"{{toCity}}\",\n  \"pickUpBranch\": \"{{pickUpBranch}}\",\n  \"dropBranch\": \"{{dropBranch}}\"\n}",
@@ -3864,7 +4095,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (pendingDispatchStockReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (pendingDispatchStockReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": \"{{toCity}}\",\n  \"pickUpBranch\": \"{{pickUpBranch}}\",\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\"\n}",
@@ -3937,7 +4168,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (dispatchedMemoReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (dispatchedMemoReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": \"{{toCity}}\",\n  \"pickUpBranch\": \"{{pickUpBranch}}\",\n  \"dropBranch\": \"{{dropBranch}}\",\n  \"vehicalNumber\": \"{{vehicalNumber}}\"\n}",
@@ -4010,7 +4241,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (parcelIncomingLuggagesReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (parcelIncomingLuggagesReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": \"{{toCity}}\",\n  \"pickUpBranch\": \"{{pickUpBranch}}\",\n  \"dropBranch\": \"{{dropBranch}}\"\n}",
@@ -4073,7 +4304,7 @@
                 "grnNolrNo"
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (getBookingByGrnOrLrNumber). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (getBookingByGrnOrLrNumber). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"grnlrn\": \"{{lrNumber}}\"\n}",
@@ -4111,7 +4342,7 @@
                 "get-above700"
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (getAllBookingsAbove700). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (getAllBookingsAbove700). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -4155,7 +4386,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (salesSummaryByBranchWise). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (salesSummaryByBranchWise). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"date\": \"{{date}}\"\n}",
@@ -4228,7 +4459,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (collectionSummaryReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (collectionSummaryReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"selectedDate\": \"{{date}}\"\n}",
@@ -4301,7 +4532,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (branchAccount). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (branchAccount). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"date\": \"{{date}}\"\n}",
@@ -4374,7 +4605,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (acPartyAccount). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (acPartyAccount). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"date\": \"{{date}}\"\n}",
@@ -4442,7 +4673,7 @@
                 }
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (statusWiseSummary). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report."
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (statusWiseSummary). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report."
           },
           "response": [],
           "event": [
@@ -4491,7 +4722,7 @@
                 "get-total"
               ]
             },
-            "description": "Source: routes/booking.route.js -> controllers/booking.controller.js (getTotalByBranchAndDate). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/booking.route.js -> src/controllers/booking.controller.js (getTotalByBranchAndDate). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         }
@@ -4529,7 +4760,7 @@
                 "vehicle"
               ]
             },
-            "description": "Source: routes/vehicle.route.js -> controllers/vehicle.controller.js (createVehicle). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/vehicle.route.js -> src/controllers/vehicle.controller.js (createVehicle). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"vehicleNo\": \"{{vehicleNo}}\",\n  \"vehicleType\": \"Truck\",\n  \"registrationNo\": \"TS09AB1234\",\n  \"date\": \"{{date}}\",\n  \"RC\": \"TEST-RC\",\n  \"polutionExpDate\": \"2027-10-29\",\n  \"fuelType\": \"DIESEL\",\n  \"branch\": \"{{pickUpBranch}}\",\n  \"vehicleStatus\": \"active\"\n}",
@@ -4566,7 +4797,7 @@
                 "vehicle"
               ]
             },
-            "description": "Source: routes/vehicle.route.js -> controllers/vehicle.controller.js (getAllVehicles). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/vehicle.route.js -> src/controllers/vehicle.controller.js (getAllVehicles). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -4595,7 +4826,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/vehicle.route.js -> controllers/vehicle.controller.js (getVehicleById). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/vehicle.route.js -> src/controllers/vehicle.controller.js (getVehicleById). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -4625,7 +4856,7 @@
                 "{{vehicleNo}}"
               ]
             },
-            "description": "Source: routes/vehicle.route.js -> controllers/vehicle.controller.js (getVehicleNo). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/vehicle.route.js -> src/controllers/vehicle.controller.js (getVehicleNo). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -4659,7 +4890,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/vehicle.route.js -> controllers/vehicle.controller.js (updateVehicle). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/vehicle.route.js -> src/controllers/vehicle.controller.js (updateVehicle). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"vehicleStatus\": \"active\"\n}",
@@ -4697,7 +4928,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/vehicle.route.js -> controllers/vehicle.controller.js (deleteVehicle). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/vehicle.route.js -> src/controllers/vehicle.controller.js (deleteVehicle). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -4727,7 +4958,7 @@
                 "{{status}}"
               ]
             },
-            "description": "Source: routes/vehicle.route.js -> controllers/vehicle.controller.js (getVehiclesByStatus). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/vehicle.route.js -> src/controllers/vehicle.controller.js (getVehiclesByStatus). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         }
@@ -4776,7 +5007,7 @@
                 }
               ]
             },
-            "description": "Source: routes/parcel.loading.route.js -> controllers/pracel.loading.controller.js (getBookingsBetweenDates). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/parcel.loading.route.js -> src/controllers/parcel.loading.controller.js (getBookingsBetweenDates). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"startDate\": \"{{fromDate}}\",\n  \"endDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": \"{{toCity}}\",\n  \"pickUpBranch\": \"{{pickUpBranch}}\"\n}",
@@ -4838,7 +5069,7 @@
                 "parcel-loading"
               ]
             },
-            "description": "Source: routes/parcel.loading.route.js -> controllers/pracel.loading.controller.js (createParcel). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/parcel.loading.route.js -> src/controllers/parcel.loading.controller.js (createParcel). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": [\n    \"{{toCity}}\"\n  ],\n  \"fromBranch\": \"{{pickUpBranch}}\",\n  \"vehicalNumber\": \"{{vehicalNumber}}\",\n  \"driverName\": \"Test Driver\",\n  \"driverNo\": 9000000001,\n  \"grnNo\": [\n    1001\n  ],\n  \"lrNumber\": [\n    \"{{lrNumber}}\"\n  ],\n  \"remarks\": \"Postman test\"\n}",
@@ -4875,7 +5106,7 @@
                 "parcel-loading"
               ]
             },
-            "description": "Source: routes/parcel.loading.route.js -> controllers/pracel.loading.controller.js (getAllParcels). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/parcel.loading.route.js -> src/controllers/parcel.loading.controller.js (getAllParcels). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -4904,7 +5135,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/parcel.loading.route.js -> controllers/pracel.loading.controller.js (getParcelById). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/parcel.loading.route.js -> src/controllers/parcel.loading.controller.js (getParcelById). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -4934,7 +5165,7 @@
                 "{{vocherNoUnique}}"
               ]
             },
-            "description": "Source: routes/parcel.loading.route.js -> controllers/pracel.loading.controller.js (getParcelVocherNoUnique). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/parcel.loading.route.js -> src/controllers/parcel.loading.controller.js (getParcelVocherNoUnique). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -4964,7 +5195,7 @@
                 "{{vocherNoUnique}}"
               ]
             },
-            "description": "Source: routes/parcel.loading.route.js -> controllers/pracel.loading.controller.js (offlineParcelVoucherDetailsPrint). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/parcel.loading.route.js -> src/controllers/parcel.loading.controller.js (offlineParcelVoucherDetailsPrint). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -4998,7 +5229,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/parcel.loading.route.js -> controllers/pracel.loading.controller.js (updateParcel). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/parcel.loading.route.js -> src/controllers/parcel.loading.controller.js (updateParcel). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"remarks\": \"Updated loading\"\n}",
@@ -5036,7 +5267,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/parcel.loading.route.js -> controllers/pracel.loading.controller.js (deleteParcel). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/parcel.loading.route.js -> src/controllers/parcel.loading.controller.js (deleteParcel). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -5070,7 +5301,7 @@
                 "updateGrnNumbers"
               ]
             },
-            "description": "Source: routes/parcel.loading.route.js -> controllers/pracel.loading.controller.js (updateAllGrnNumbers). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/parcel.loading.route.js -> src/controllers/parcel.loading.controller.js (updateAllGrnNumbers). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"grnNumbers\": [\n    1001\n  ],\n  \"updateFields\": {\n    \"remarks\": \"Updated during testing\"\n  }\n}",
@@ -5113,7 +5344,7 @@
                 "get-lrNumber"
               ]
             },
-            "description": "Source: routes/parcel.loading.route.js -> controllers/pracel.loading.controller.js (getParcelByLrNumber). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/parcel.loading.route.js -> src/controllers/parcel.loading.controller.js (getParcelByLrNumber). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"lrNumber\": \"{{lrNumber}}\"\n}",
@@ -5152,7 +5383,7 @@
                 "{{grnNo}}"
               ]
             },
-            "description": "Source: routes/parcel.loading.route.js -> controllers/pracel.loading.controller.js (getParcelByGrnNo). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/parcel.loading.route.js -> src/controllers/parcel.loading.controller.js (getParcelByGrnNo). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -5182,7 +5413,7 @@
                 "{{vehicalNumber}}"
               ]
             },
-            "description": "Source: routes/parcel.loading.route.js -> controllers/pracel.loading.controller.js (getParcelByVehicalNumber). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/parcel.loading.route.js -> src/controllers/parcel.loading.controller.js (getParcelByVehicalNumber). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -5226,7 +5457,7 @@
                 }
               ]
             },
-            "description": "Source: routes/parcel.loading.route.js -> controllers/pracel.loading.controller.js (offlineParcelVoucherDetails). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/parcel.loading.route.js -> src/controllers/parcel.loading.controller.js (offlineParcelVoucherDetails). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"vehicalNumber\": \"{{vehicalNumber}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": \"{{toCity}}\",\n  \"fromBranch\": \"{{pickUpBranch}}\"\n}",
@@ -5299,7 +5530,7 @@
                 }
               ]
             },
-            "description": "Source: routes/parcel.loading.route.js -> controllers/pracel.loading.controller.js (parcelOfflineReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/parcel.loading.route.js -> src/controllers/parcel.loading.controller.js (parcelOfflineReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": \"{{toCity}}\",\n  \"fromBranch\": \"{{pickUpBranch}}\"\n}",
@@ -5372,7 +5603,7 @@
                 }
               ]
             },
-            "description": "Source: routes/parcel.loading.route.js -> controllers/pracel.loading.controller.js (parcelStatusReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/parcel.loading.route.js -> src/controllers/parcel.loading.controller.js (parcelStatusReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"startDate\": \"{{fromDate}}\",\n  \"endDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": \"{{toCity}}\",\n  \"parcelStatus\": 0\n}",
@@ -5445,7 +5676,7 @@
                 }
               ]
             },
-            "description": "Source: routes/parcel.loading.route.js -> controllers/pracel.loading.controller.js (parcelPendingReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/parcel.loading.route.js -> src/controllers/parcel.loading.controller.js (parcelPendingReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": \"{{toCity}}\",\n  \"fromBranch\": \"{{pickUpBranch}}\",\n  \"toBranch\": \"{{dropBranch}}\"\n}",
@@ -5518,7 +5749,7 @@
                 }
               ]
             },
-            "description": "Source: routes/parcel.loading.route.js -> controllers/pracel.loading.controller.js (getBookingsByDateAndBranch). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/parcel.loading.route.js -> src/controllers/parcel.loading.controller.js (getBookingsByDateAndBranch). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromBookingDate\": \"{{fromDate}}\",\n  \"toBookingDate\": \"{{toDate}}\",\n  \"fromBranch\": \"{{pickUpBranch}}\"\n}",
@@ -5581,7 +5812,7 @@
                 "branch-to-branch-post"
               ]
             },
-            "description": "Source: routes/parcel.loading.route.js -> controllers/pracel.loading.controller.js (createBranchToBranch). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/parcel.loading.route.js -> src/controllers/parcel.loading.controller.js (createBranchToBranch). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": [\n    \"{{toCity}}\"\n  ],\n  \"fromBranch\": \"{{pickUpBranch}}\",\n  \"vehicalNumber\": \"{{vehicalNumber}}\",\n  \"driverName\": \"Test Driver\",\n  \"driverNo\": 9000000001,\n  \"grnNo\": [\n    1001\n  ],\n  \"lrNumber\": [\n    \"{{lrNumber}}\"\n  ],\n  \"remarks\": \"Postman test\"\n}",
@@ -5634,7 +5865,7 @@
                 }
               ]
             },
-            "description": "Source: routes/parcel.loading.route.js -> controllers/pracel.loading.controller.js (dispatchedStockReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/parcel.loading.route.js -> src/controllers/parcel.loading.controller.js (dispatchedStockReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": \"{{toCity}}\",\n  \"fromBranch\": \"{{pickUpBranch}}\"\n}",
@@ -5702,10 +5933,10 @@
                 "cities"
               ]
             },
-            "description": "Source: routes/multi.router.js -> controllers/city.controller.js (createCity). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/multi.router.js -> src/controllers/city.controller.js (createCity). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"cityName\": \"Sample cityName\",\n  \"state\": \"Telangana\",\n  \"code\": \"Sample code\",\n  \"address\": \"Sample street\"\n}",
+              "raw": "{}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5740,7 +5971,7 @@
                 "cities"
               ]
             },
-            "description": "Source: routes/multi.router.js -> controllers/city.controller.js (getCities). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/multi.router.js -> src/controllers/city.controller.js (getCities). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -5775,7 +6006,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/multi.router.js -> controllers/city.controller.js (updateCity). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/multi.router.js -> src/controllers/city.controller.js (updateCity). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"cityName\": \"Hyderabad\"\n}",
@@ -5814,7 +6045,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/multi.router.js -> controllers/city.controller.js (deleteCity). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/multi.router.js -> src/controllers/city.controller.js (deleteCity). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -5849,10 +6080,10 @@
                 "delete-cities"
               ]
             },
-            "description": "Source: routes/multi.router.js -> controllers/city.controller.js (deleteSelectedCities). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/multi.router.js -> src/controllers/city.controller.js (deleteSelectedCities). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"cityIds\": [\n    \"{{id}}\"\n  ]\n}",
+              "raw": "{}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5892,7 +6123,7 @@
                 "dispatch-types"
               ]
             },
-            "description": "Source: routes/multi.router.js -> controllers/dispatchType.controller.js (createDispatchType). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/multi.router.js -> src/controllers/dispatchType.controller.js (createDispatchType). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Sample\",\n  \"isActive\": true\n}",
@@ -5930,7 +6161,7 @@
                 "dispatch-types"
               ]
             },
-            "description": "Source: routes/multi.router.js -> controllers/dispatchType.controller.js (getDispatchTypes). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/multi.router.js -> src/controllers/dispatchType.controller.js (getDispatchTypes). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -5960,7 +6191,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/multi.router.js -> controllers/dispatchType.controller.js (getDispatchTypeById). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/multi.router.js -> src/controllers/dispatchType.controller.js (getDispatchTypeById). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -5995,7 +6226,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/multi.router.js -> controllers/dispatchType.controller.js (updateDispatchType). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/multi.router.js -> src/controllers/dispatchType.controller.js (updateDispatchType). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Sample\",\n  \"isActive\": true\n}",
@@ -6034,7 +6265,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/multi.router.js -> controllers/dispatchType.controller.js (deleteDispatchType). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/multi.router.js -> src/controllers/dispatchType.controller.js (deleteDispatchType). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -6068,7 +6299,7 @@
                 "package-types"
               ]
             },
-            "description": "Source: routes/multi.router.js -> controllers/packageType.controller.js (createPackageType). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/multi.router.js -> src/controllers/packageType.controller.js (createPackageType). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Sample\"\n}",
@@ -6106,7 +6337,7 @@
                 "package-types"
               ]
             },
-            "description": "Source: routes/multi.router.js -> controllers/packageType.controller.js (getPackageTypes). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/multi.router.js -> src/controllers/packageType.controller.js (getPackageTypes). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -6136,7 +6367,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/multi.router.js -> controllers/packageType.controller.js (getPackageTypeById). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/multi.router.js -> src/controllers/packageType.controller.js (getPackageTypeById). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -6171,7 +6402,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/multi.router.js -> controllers/packageType.controller.js (updatePackageType). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/multi.router.js -> src/controllers/packageType.controller.js (updatePackageType). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Sample\"\n}",
@@ -6210,7 +6441,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/multi.router.js -> controllers/packageType.controller.js (deletePackageType). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/multi.router.js -> src/controllers/packageType.controller.js (deletePackageType). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -6244,7 +6475,7 @@
                 "assets"
               ]
             },
-            "description": "Source: routes/multi.router.js -> controllers/asset.controller.js (createAsset). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/multi.router.js -> src/controllers/asset.controller.js (createAsset). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Sample\",\n  \"value\": 100,\n  \"assetType\": \"{{assetType}}\",\n  \"purchaseDate\": \"{{date}}\"\n}",
@@ -6282,7 +6513,7 @@
                 "assets"
               ]
             },
-            "description": "Source: routes/multi.router.js -> controllers/asset.controller.js (getAssets). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/multi.router.js -> src/controllers/asset.controller.js (getAssets). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -6313,7 +6544,7 @@
                 "{{assetType}}"
               ]
             },
-            "description": "Source: routes/multi.router.js -> controllers/asset.controller.js (getByAssetTypes). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/multi.router.js -> src/controllers/asset.controller.js (getByAssetTypes). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -6348,7 +6579,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/multi.router.js -> controllers/asset.controller.js (updateAsset). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/multi.router.js -> src/controllers/asset.controller.js (updateAsset). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"value\": 200\n}",
@@ -6387,7 +6618,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/multi.router.js -> controllers/asset.controller.js (deleteAsset). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/multi.router.js -> src/controllers/asset.controller.js (deleteAsset). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -6421,7 +6652,7 @@
                 "expenditures"
               ]
             },
-            "description": "Source: routes/multi.router.js -> controllers/expenditure.controller.js (createExpenditure). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/multi.router.js -> src/controllers/expenditure.controller.js (createExpenditure). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Sample\",\n  \"expenditureType\": \"{{expenditureType}}\",\n  \"expenditureDate\": \"{{date}}\",\n  \"expenditureStatus\": 0,\n  \"value\": 100,\n  \"date\": \"{{date}}\",\n  \"remarks\": \"Postman test\"\n}",
@@ -6459,7 +6690,7 @@
                 "expenditures"
               ]
             },
-            "description": "Source: routes/multi.router.js -> controllers/expenditure.controller.js (getExpenditures). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/multi.router.js -> src/controllers/expenditure.controller.js (getExpenditures). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -6490,7 +6721,7 @@
                 "{{expenditureType}}"
               ]
             },
-            "description": "Source: routes/multi.router.js -> controllers/expenditure.controller.js (getExpenditureByType). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/multi.router.js -> src/controllers/expenditure.controller.js (getExpenditureByType). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -6525,7 +6756,7 @@
                 "get-date-range"
               ]
             },
-            "description": "Source: routes/multi.router.js -> controllers/expenditure.controller.js (getExpendituresByDateRange). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/multi.router.js -> src/controllers/expenditure.controller.js (getExpendituresByDateRange). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"startDate\": \"{{fromDate}}\",\n  \"endDate\": \"{{toDate}}\"\n}",
@@ -6569,7 +6800,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/multi.router.js -> controllers/expenditure.controller.js (updateExpenditure). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/multi.router.js -> src/controllers/expenditure.controller.js (updateExpenditure). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Sample\",\n  \"expenditureType\": \"{{expenditureType}}\",\n  \"expenditureDate\": \"{{date}}\",\n  \"expenditureStatus\": 0,\n  \"value\": 100,\n  \"date\": \"{{date}}\",\n  \"remarks\": \"Postman test\"\n}",
@@ -6608,7 +6839,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/multi.router.js -> controllers/expenditure.controller.js (deleteExpenditure). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/multi.router.js -> src/controllers/expenditure.controller.js (deleteExpenditure). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         }
@@ -6646,7 +6877,7 @@
                 "extra-charge"
               ]
             },
-            "description": "Source: routes/extra.charge.route.js -> controllers/extra.charge.controller.js (createCharge). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/extra.charge.route.js -> src/controllers/extra.charge.controller.js (createCharge). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": \"{{toCity}}\",\n  \"GST\": \"0\",\n  \"serviceCharge\": 10,\n  \"loadingCharge\": 10,\n  \"cartageCharge\": 10,\n  \"isActive\": true\n}",
@@ -6683,7 +6914,7 @@
                 "extra-charge"
               ]
             },
-            "description": "Source: routes/extra.charge.route.js -> controllers/extra.charge.controller.js (getAllExtraCharge). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/extra.charge.route.js -> src/controllers/extra.charge.controller.js (getAllExtraCharge). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -6717,7 +6948,7 @@
                 "filter-city-wise"
               ]
             },
-            "description": "Source: routes/extra.charge.route.js -> controllers/extra.charge.controller.js (getChargeFromCityToCity). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/extra.charge.route.js -> src/controllers/extra.charge.controller.js (getChargeFromCityToCity). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": \"{{toCity}}\"\n}",
@@ -6755,7 +6986,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/extra.charge.route.js -> controllers/extra.charge.controller.js (deleteCharge). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/extra.charge.route.js -> src/controllers/extra.charge.controller.js (deleteCharge). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -6789,7 +7020,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/extra.charge.route.js -> controllers/extra.charge.controller.js (updateChargeById). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/extra.charge.route.js -> src/controllers/extra.charge.controller.js (updateChargeById). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"serviceCharge\": 20\n}",
@@ -6847,10 +7078,10 @@
                 }
               ]
             },
-            "description": "Source: routes/parcel.unloading.route.js -> controllers/parcel.unloading.controller.js (getParcelsLoading). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/parcel.unloading.route.js -> src/controllers/parcel.unloading.controller.js (getParcelsLoading). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": \"{{toCity}}\",\n  \"branch\": \"{{pickUpBranch}}\",\n  \"bookingType\": \"paid\",\n  \"bookingStatus\": 0\n}",
+              "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": \"{{toCity}}\",\n  \"branch\": \"{{pickUpBranch}}\",\n  \"bookingType\": \"paid\",\n  \"bookingStatus\": 0,\n  \"vehicalNumber\": \"{{vehicalNumber}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6906,7 +7137,7 @@
                 "{{grnNo}}"
               ]
             },
-            "description": "Source: routes/parcel.unloading.route.js -> controllers/parcel.unloading.controller.js (getParcelunLoadingByGrnNumber). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/parcel.unloading.route.js -> src/controllers/parcel.unloading.controller.js (getParcelunLoadingByGrnNumber). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -6939,7 +7170,7 @@
                 "parcel-unloading"
               ]
             },
-            "description": "Source: routes/parcel.unloading.route.js -> controllers/parcel.unloading.controller.js (createParcelUnloading). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/parcel.unloading.route.js -> src/controllers/parcel.unloading.controller.js (createParcelUnloading). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"vehicalNumber\": \"{{vehicalNumber}}\",\n  \"branch\": \"{{dropBranch}}\",\n  \"bookingType\": \"paid\",\n  \"grnNo\": [\n    1001\n  ],\n  \"lrNumber\": [\n    \"{{lrNumber}}\"\n  ]\n}",
@@ -6976,7 +7207,7 @@
                 "parcel-unloading"
               ]
             },
-            "description": "Source: routes/parcel.unloading.route.js -> controllers/parcel.unloading.controller.js (getAllParcelUnloadings). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/parcel.unloading.route.js -> src/controllers/parcel.unloading.controller.js (getAllParcelUnloadings). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -7005,7 +7236,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/parcel.unloading.route.js -> controllers/parcel.unloading.controller.js (getParcelUnloadingById). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/parcel.unloading.route.js -> src/controllers/parcel.unloading.controller.js (getParcelUnloadingById). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -7035,7 +7266,7 @@
                 "{{voucher}}"
               ]
             },
-            "description": "Source: routes/parcel.unloading.route.js -> controllers/parcel.unloading.controller.js (getParcelUnloadingByVoucher). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/parcel.unloading.route.js -> src/controllers/parcel.unloading.controller.js (getParcelUnloadingByVoucher). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -7079,7 +7310,7 @@
                 }
               ]
             },
-            "description": "Source: routes/parcel.unloading.route.js -> controllers/parcel.unloading.controller.js (getParcelsByFilters). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/parcel.unloading.route.js -> src/controllers/parcel.unloading.controller.js (getParcelsByFilters). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": \"{{toCity}}\",\n  \"branch\": \"{{pickUpBranch}}\",\n  \"vehicleNo\": \"{{vehicleNo}}\"\n}",
@@ -7142,7 +7373,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/parcel.unloading.route.js -> controllers/parcel.unloading.controller.js (updateParcelUnloading). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/parcel.unloading.route.js -> src/controllers/parcel.unloading.controller.js (updateParcelUnloading). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"remarks\": \"Updated unloading\"\n}",
@@ -7180,7 +7411,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/parcel.unloading.route.js -> controllers/parcel.unloading.controller.js (deleteParcelUnloading). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/parcel.unloading.route.js -> src/controllers/parcel.unloading.controller.js (deleteParcelUnloading). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -7224,7 +7455,7 @@
                 }
               ]
             },
-            "description": "Source: routes/parcel.unloading.route.js -> controllers/parcel.unloading.controller.js (getUnloadingReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/parcel.unloading.route.js -> src/controllers/parcel.unloading.controller.js (getUnloadingReport). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": \"{{toCity}}\",\n  \"fromBranch\": \"{{pickUpBranch}}\",\n  \"bookingType\": \"paid\"\n}",
@@ -7297,7 +7528,7 @@
                 }
               ]
             },
-            "description": "Source: routes/parcel.unloading.route.js -> controllers/parcel.unloading.controller.js (parcelBranchToBranchUnloading). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/parcel.unloading.route.js -> src/controllers/parcel.unloading.controller.js (parcelBranchToBranchUnloading). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"toBranch\": \"{{dropBranch}}\"\n}",
@@ -7360,58 +7591,10 @@
                 "branch-to-branch-post"
               ]
             },
-            "description": "Source: routes/parcel.unloading.route.js -> controllers/parcel.unloading.controller.js (parcelBranchToBranchUnloadingPost). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/parcel.unloading.route.js -> src/controllers/parcel.unloading.controller.js (parcelBranchToBranchUnloadingPost). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"unloadBranch\": \"{{dropBranch}}\",\n  \"grnNo\": [\n    1001\n  ],\n  \"lrNumber\": [\n    \"{{lrNumber}}\"\n  ],\n  \"remarks\": \"Postman test\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "shiprocket",
-      "item": [
-        {
-          "name": "POST /shiprocket/create-order",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{baseUrl}}/shiprocket/create-order",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "shiprocket",
-                "create-order"
-              ]
-            },
-            "description": "Source: routes/shiprocket.route.js -> controllers/shiprocket.controller.js (createOrder). Requires token. Sample fields must be replaced with your test data.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"order_id\": \"TEST-{{$timestamp}}\",\n  \"order_date\": \"{{date}}\",\n  \"pickup_location\": \"REPLACE_WITH_SHIPROCKET_PICKUP_LOCATION\",\n  \"billing_customer_name\": \"Test\",\n  \"billing_last_name\": \"Customer\",\n  \"billing_address\": \"Sample street\",\n  \"billing_city\": \"Hyderabad\",\n  \"billing_pincode\": 500001,\n  \"billing_state\": \"Telangana\",\n  \"billing_country\": \"India\",\n  \"billing_email\": \"test@example.com\",\n  \"billing_phone\": 9000000001,\n  \"shipping_is_billing\": true,\n  \"order_items\": [\n    {\n      \"name\": \"Test Item\",\n      \"sku\": \"TEST001\",\n      \"units\": 1,\n      \"selling_price\": 100\n    }\n  ],\n  \"payment_method\": \"Prepaid\",\n  \"sub_total\": 100,\n  \"length\": 10,\n  \"breadth\": 10,\n  \"height\": 10,\n  \"weight\": 0.5\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -7455,7 +7638,7 @@
                 "cfmaster"
               ]
             },
-            "description": "Source: routes/cf.master.router.js -> controllers/cf.master.controller.js (createMaster). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/cf.master.router.js -> src/controllers/cf.master.controller.js (createMaster). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"gst\": \"Sample gst\",\n  \"country\": \"India\",\n  \"state\": \"Telangana\",\n  \"city\": \"{{city}}\",\n  \"code\": \"Sample code\",\n  \"name\": \"Sample\",\n  \"email\": \"sample@example.com\",\n  \"phone\": \"9000000001\",\n  \"address\": \"Sample street\",\n  \"isActive\": true,\n  \"isPostPaid\": \"Sample isPostPaid\",\n  \"isAgent\": \"Sample isAgent\",\n  \"isAllowNegativeBooking\": \"Sample isAllowNegativeBooking\",\n  \"PAN\": \"Sample PAN\",\n  \"accountNo\": \"Sample accountNo\",\n  \"ifscCode\": \"Sample ifscCode\",\n  \"tanNo\": \"Sample tanNo\",\n  \"creditDaysLimit\": 0,\n  \"exDate\": \"{{date}}\",\n  \"partyAccountEmail\": \"Sample partyAccountEmail\",\n  \"transportEmail\": \"Sample transportEmail\",\n  \"executiveName\": \"Sample executiveName\",\n  \"senderName\": \"Test Sender\",\n  \"senderMobile\": 9000000001,\n  \"receiverName\": \"Test Receiver\",\n  \"receiverMobile\": 9000000002\n}",
@@ -7492,7 +7675,7 @@
                 "cfmaster"
               ]
             },
-            "description": "Source: routes/cf.master.router.js -> controllers/cf.master.controller.js (getAllMasters). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/cf.master.router.js -> src/controllers/cf.master.controller.js (getAllMasters). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -7522,7 +7705,7 @@
                 "{{name}}"
               ]
             },
-            "description": "Source: routes/cf.master.router.js -> controllers/cf.master.controller.js (getMasterByName). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/cf.master.router.js -> src/controllers/cf.master.controller.js (getMasterByName). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -7556,7 +7739,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/cf.master.router.js -> controllers/cf.master.controller.js (updateMaster). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/cf.master.router.js -> src/controllers/cf.master.controller.js (updateMaster). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Updated Agent\"\n}",
@@ -7594,7 +7777,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/cf.master.router.js -> controllers/cf.master.controller.js (deleteMaster). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/cf.master.router.js -> src/controllers/cf.master.controller.js (deleteMaster). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -7624,7 +7807,7 @@
                 "{{city}}"
               ]
             },
-            "description": "Source: routes/cf.master.router.js -> controllers/cf.master.controller.js (getCFMasterByCity). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/cf.master.router.js -> src/controllers/cf.master.controller.js (getCFMasterByCity). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         }
@@ -7662,7 +7845,7 @@
                 "cfextra-charge"
               ]
             },
-            "description": "Source: routes/cf.extra.charge.router.js -> controllers/cf.extra.charge.controller.js (createCFExtraCharge). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/cf.extra.charge.router.js -> src/controllers/cf.extra.charge.controller.js (createCFExtraCharge). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"agentName\": \"{{agentName}}\",\n  \"chargeName\": \"Sample chargeName\",\n  \"fromCity\": \"{{fromCity}}\",\n  \"toCity\": \"{{toCity}}\",\n  \"charge\": 10,\n  \"modeOnPrice\": \"weight\",\n  \"itemName\": \"Sample itemName\",\n  \"dispatchType\": \"Road\",\n  \"isActive\": true\n}",
@@ -7699,7 +7882,7 @@
                 "cfextra-charge"
               ]
             },
-            "description": "Source: routes/cf.extra.charge.router.js -> controllers/cf.extra.charge.controller.js (getAllCFExtraCharges). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/cf.extra.charge.router.js -> src/controllers/cf.extra.charge.controller.js (getAllCFExtraCharges). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -7728,7 +7911,7 @@
                 "{{agentName}}"
               ]
             },
-            "description": "Source: routes/cf.extra.charge.router.js -> controllers/cf.extra.charge.controller.js (getCFExtraChargeByAgentName). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/cf.extra.charge.router.js -> src/controllers/cf.extra.charge.controller.js (getCFExtraChargeByAgentName). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -7762,7 +7945,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/cf.extra.charge.router.js -> controllers/cf.extra.charge.controller.js (updateCFExtraCharge). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/cf.extra.charge.router.js -> src/controllers/cf.extra.charge.controller.js (updateCFExtraCharge). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"charge\": 20\n}",
@@ -7800,7 +7983,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/cf.extra.charge.router.js -> controllers/cf.extra.charge.controller.js (deleteCFExtraCharge). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/cf.extra.charge.router.js -> src/controllers/cf.extra.charge.controller.js (deleteCFExtraCharge). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         }
@@ -7849,7 +8032,7 @@
                 }
               ]
             },
-            "description": "Source: routes/cf.voucher.generate.route.js -> controllers/cf.voucher.controller.js (creditForVoucherGenerate). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/cf.voucher.generate.route.js -> src/controllers/cf.voucher.controller.js (creditForVoucherGenerate). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"senderName\": \"Test Sender\"\n}",
@@ -7911,7 +8094,7 @@
                 "voucher-generate"
               ]
             },
-            "description": "Source: routes/cf.voucher.generate.route.js -> controllers/cf.voucher.controller.js (createCFVoucher). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/cf.voucher.generate.route.js -> src/controllers/cf.voucher.controller.js (createCFVoucher). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"grnNo\": [\n    1001\n  ]\n}",
@@ -7948,7 +8131,7 @@
                 "voucher-generate"
               ]
             },
-            "description": "Source: routes/cf.voucher.generate.route.js -> controllers/cf.voucher.controller.js (getAllCFVouchers). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/cf.voucher.generate.route.js -> src/controllers/cf.voucher.controller.js (getAllCFVouchers). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -7977,7 +8160,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/cf.voucher.generate.route.js -> controllers/cf.voucher.controller.js (getCFVoucherById). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/cf.voucher.generate.route.js -> src/controllers/cf.voucher.controller.js (getCFVoucherById). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -8011,7 +8194,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/cf.voucher.generate.route.js -> controllers/cf.voucher.controller.js (updateCFVoucher). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/cf.voucher.generate.route.js -> src/controllers/cf.voucher.controller.js (updateCFVoucher). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"charge\": \"20\"\n}",
@@ -8049,7 +8232,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/cf.voucher.generate.route.js -> controllers/cf.voucher.controller.js (deleteCFVoucher). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/cf.voucher.generate.route.js -> src/controllers/cf.voucher.controller.js (deleteCFVoucher). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -8093,7 +8276,7 @@
                 }
               ]
             },
-            "description": "Source: routes/cf.voucher.generate.route.js -> controllers/cf.voucher.controller.js (voucherDetails). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
+            "description": "Source: src/routes/cf.voucher.generate.route.js -> src/controllers/cf.voucher.controller.js (voucherDetails). Requires token. Sample fields must be replaced with your test data. Pagination: page defaults to 1; limit defaults to 25 and is capped at 100. Totals cover the complete filtered report.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fromDate\": \"{{fromDate}}\",\n  \"toDate\": \"{{toDate}}\",\n  \"senderName\": \"Test Sender\"\n}",
@@ -8156,7 +8339,7 @@
                 "voucher-details-print"
               ]
             },
-            "description": "Source: routes/cf.voucher.generate.route.js -> controllers/cf.voucher.controller.js (voucherDetailsPrint). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/cf.voucher.generate.route.js -> src/controllers/cf.voucher.controller.js (voucherDetailsPrint). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"voucherNo\": \"{{voucherNo}}\",\n  \"creditForAgent\": \"Test Sender\"\n}",
@@ -8204,7 +8387,7 @@
                 "expenses"
               ]
             },
-            "description": "Source: routes/expensive.route.js -> controllers/expensive.controller.js (createExpense). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/expensive.route.js -> src/controllers/expensive.controller.js (createExpense). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"branchId\": \"{{branchId}}\",\n  \"expenseDate\": \"{{date}}\",\n  \"expenseType\": \"Fuel\",\n  \"amount\": 100,\n  \"paidThrough\": \"cash\",\n  \"invoice\": \"TEST-INV-001\",\n  \"notes\": \"Postman test\"\n}",
@@ -8242,7 +8425,7 @@
                 "expenses"
               ]
             },
-            "description": "Source: routes/expensive.route.js -> controllers/expensive.controller.js (getAllExpenses). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/expensive.route.js -> src/controllers/expensive.controller.js (getAllExpenses). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -8272,7 +8455,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/expensive.route.js -> controllers/expensive.controller.js (getExpenseById). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/expensive.route.js -> src/controllers/expensive.controller.js (getExpenseById). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -8307,10 +8490,10 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/expensive.route.js -> controllers/expensive.controller.js (updateExpense). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/expensive.route.js -> src/controllers/expensive.controller.js (updateExpense). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"amount\": 200\n}",
+              "raw": "{\n  \"branchId\": \"{{branchId}}\",\n  \"amount\": 100\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -8346,7 +8529,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/expensive.route.js -> controllers/expensive.controller.js (deleteExpense). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/expensive.route.js -> src/controllers/expensive.controller.js (deleteExpense). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -8380,7 +8563,7 @@
                 "expense-types"
               ]
             },
-            "description": "Source: routes/expensive.route.js -> controllers/expensive.controller.js (createExpenseType). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/expensive.route.js -> src/controllers/expensive.controller.js (createExpenseType). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"accountType\": \"expense\",\n  \"accountName\": \"Fuel\",\n  \"accountCode\": \"FUEL\",\n  \"description\": \"Fuel expense\",\n  \"isActive\": true\n}",
@@ -8418,7 +8601,7 @@
                 "expense-types"
               ]
             },
-            "description": "Source: routes/expensive.route.js -> controllers/expensive.controller.js (getAllExpenseTypes). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/expensive.route.js -> src/controllers/expensive.controller.js (getAllExpenseTypes). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -8448,7 +8631,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/expensive.route.js -> controllers/expensive.controller.js (getExpenseTypeById). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/expensive.route.js -> src/controllers/expensive.controller.js (getExpenseTypeById). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -8483,7 +8666,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/expensive.route.js -> controllers/expensive.controller.js (updateExpenseType). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/expensive.route.js -> src/controllers/expensive.controller.js (updateExpenseType). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"accountName\": \"Fuel\"\n}",
@@ -8522,7 +8705,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/expensive.route.js -> controllers/expensive.controller.js (deleteExpenseType). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/expensive.route.js -> src/controllers/expensive.controller.js (deleteExpenseType). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -8556,7 +8739,7 @@
                 "account-cat"
               ]
             },
-            "description": "Source: routes/expensive.route.js -> controllers/expensive.controller.js (createAccountCat). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/expensive.route.js -> src/controllers/expensive.controller.js (createAccountCat). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Transport\"\n}",
@@ -8594,7 +8777,7 @@
                 "account-cat"
               ]
             },
-            "description": "Source: routes/expensive.route.js -> controllers/expensive.controller.js (getAllAccountCats). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/expensive.route.js -> src/controllers/expensive.controller.js (getAllAccountCats). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -8624,7 +8807,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/expensive.route.js -> controllers/expensive.controller.js (getAccountCatById). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/expensive.route.js -> src/controllers/expensive.controller.js (getAccountCatById). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -8659,7 +8842,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/expensive.route.js -> controllers/expensive.controller.js (updateAccountCat). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/expensive.route.js -> src/controllers/expensive.controller.js (updateAccountCat). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Transport\"\n}",
@@ -8698,7 +8881,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/expensive.route.js -> controllers/expensive.controller.js (deleteAccountCat). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/expensive.route.js -> src/controllers/expensive.controller.js (deleteAccountCat). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -8732,7 +8915,7 @@
                 "account-subcat"
               ]
             },
-            "description": "Source: routes/expensive.route.js -> controllers/expensive.controller.js (createAccountSubCat). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/expensive.route.js -> src/controllers/expensive.controller.js (createAccountSubCat). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"category\": \"{{id}}\"\n}",
@@ -8770,7 +8953,7 @@
                 "account-subcat"
               ]
             },
-            "description": "Source: routes/expensive.route.js -> controllers/expensive.controller.js (getAllAccountSubCats). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/expensive.route.js -> src/controllers/expensive.controller.js (getAllAccountSubCats). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -8800,7 +8983,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/expensive.route.js -> controllers/expensive.controller.js (getAccountSubCatById). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/expensive.route.js -> src/controllers/expensive.controller.js (getAccountSubCatById). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -8835,7 +9018,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/expensive.route.js -> controllers/expensive.controller.js (updateAccountSubCat). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/expensive.route.js -> src/controllers/expensive.controller.js (updateAccountSubCat). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"category\": \"{{id}}\"\n}",
@@ -8874,7 +9057,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/expensive.route.js -> controllers/expensive.controller.js (deleteAccountSubCat). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/expensive.route.js -> src/controllers/expensive.controller.js (deleteAccountSubCat). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -8908,7 +9091,7 @@
                 "customers"
               ]
             },
-            "description": "Source: routes/expensive.route.js -> controllers/expensive.controller.js (createCustomer). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/expensive.route.js -> src/controllers/expensive.controller.js (createCustomer). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Test Customer\",\n  \"mobile\": 9000000001\n}",
@@ -8946,7 +9129,7 @@
                 "customers"
               ]
             },
-            "description": "Source: routes/expensive.route.js -> controllers/expensive.controller.js (getAllCustomers). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/expensive.route.js -> src/controllers/expensive.controller.js (getAllCustomers). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -8976,7 +9159,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/expensive.route.js -> controllers/expensive.controller.js (getCustomerById). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/expensive.route.js -> src/controllers/expensive.controller.js (getCustomerById). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -9011,7 +9194,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/expensive.route.js -> controllers/expensive.controller.js (updateCustomer). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/expensive.route.js -> src/controllers/expensive.controller.js (updateCustomer). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Updated Customer\"\n}",
@@ -9050,7 +9233,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/expensive.route.js -> controllers/expensive.controller.js (deleteCustomer). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/expensive.route.js -> src/controllers/expensive.controller.js (deleteCustomer). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         }
@@ -9089,7 +9272,7 @@
                 "create"
               ]
             },
-            "description": "Source: routes/bank.route.js -> controllers/bank.controller.js (createBank). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/bank.route.js -> src/controllers/bank.controller.js (createBank). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"accountType\": \"bank\",\n  \"accountName\": \"Test Account\",\n  \"accountCode\": \"TEST001\",\n  \"currency\": \"INR\",\n  \"accountNumber\": \"1234567890\",\n  \"bankName\": \"Test Bank\",\n  \"ifsc\": \"TEST0000001\",\n  \"description\": \"Postman test\",\n  \"primary\": false\n}",
@@ -9127,7 +9310,7 @@
                 "get"
               ]
             },
-            "description": "Source: routes/bank.route.js -> controllers/bank.controller.js (getAllBanks). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/bank.route.js -> src/controllers/bank.controller.js (getAllBanks). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -9157,7 +9340,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/bank.route.js -> controllers/bank.controller.js (getBankById). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/bank.route.js -> src/controllers/bank.controller.js (getBankById). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -9192,7 +9375,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/bank.route.js -> controllers/bank.controller.js (updateBank). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/bank.route.js -> src/controllers/bank.controller.js (updateBank). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"accountType\": \"bank\",\n  \"accountName\": \"Test Account\",\n  \"accountCode\": \"TEST001\",\n  \"currency\": \"INR\",\n  \"accountNumber\": \"1234567890\",\n  \"bankName\": \"Test Bank\",\n  \"ifsc\": \"TEST0000001\",\n  \"description\": \"Postman test\",\n  \"primary\": false\n}",
@@ -9231,7 +9414,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/bank.route.js -> controllers/bank.controller.js (deleteBank). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/bank.route.js -> src/controllers/bank.controller.js (deleteBank). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         }
@@ -9270,7 +9453,7 @@
                 "create"
               ]
             },
-            "description": "Source: routes/item.route.js -> controllers/item.controller.js (createItem). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/item.route.js -> src/controllers/item.controller.js (createItem). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"type\": \"Goods\",\n  \"name\": \"Sample\",\n  \"unit\": \"pcs\",\n  \"salesInfo\": {\n    \"sellingPrice\": 100,\n    \"account\": \"Sales\",\n    \"description\": \"Test\"\n  },\n  \"purchaseInfo\": {\n    \"costPrice\": 80,\n    \"account\": \"Purchases\",\n    \"description\": \"Test\",\n    \"preferredVendor\": \"\"\n  }\n}",
@@ -9308,7 +9491,7 @@
                 "get"
               ]
             },
-            "description": "Source: routes/item.route.js -> controllers/item.controller.js (getItems). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/item.route.js -> src/controllers/item.controller.js (getItems). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -9338,7 +9521,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/item.route.js -> controllers/item.controller.js (getItemById). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/item.route.js -> src/controllers/item.controller.js (getItemById). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -9373,7 +9556,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/item.route.js -> controllers/item.controller.js (updateItem). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/item.route.js -> src/controllers/item.controller.js (updateItem). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"type\": \"Goods\",\n  \"name\": \"Sample\",\n  \"unit\": \"pcs\",\n  \"salesInfo\": {\n    \"sellingPrice\": 100,\n    \"account\": \"Sales\",\n    \"description\": \"Test\"\n  },\n  \"purchaseInfo\": {\n    \"costPrice\": 80,\n    \"account\": \"Purchases\",\n    \"description\": \"Test\",\n    \"preferredVendor\": \"\"\n  }\n}",
@@ -9412,7 +9595,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/item.route.js -> controllers/item.controller.js (deleteItem). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/item.route.js -> src/controllers/item.controller.js (deleteItem). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         }
@@ -9451,7 +9634,7 @@
                 "create"
               ]
             },
-            "description": "Source: routes/vendor.route.js -> controllers/vendor.controller.js (createVendor). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/vendor.route.js -> src/controllers/vendor.controller.js (createVendor). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Sample\",\n  \"companyName\": \"Test Vendor Company\",\n  \"displayName\": \"Test Vendor\",\n  \"address\": \"Sample street\",\n  \"workPhone\": \"9000000001\",\n  \"mobile\": \"9000000001\",\n  \"bankDetails\": {\n    \"accountNumber\": \"1234567890\",\n    \"accountName\": \"Test Vendor\",\n    \"bankName\": \"Test Bank\",\n    \"branchName\": \"Main\",\n    \"ifscCode\": \"TEST0000001\"\n  }\n}",
@@ -9489,7 +9672,7 @@
                 "get"
               ]
             },
-            "description": "Source: routes/vendor.route.js -> controllers/vendor.controller.js (getAllVendors). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/vendor.route.js -> src/controllers/vendor.controller.js (getAllVendors). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -9518,7 +9701,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/vendor.route.js -> controllers/vendor.controller.js (getVendorById). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/vendor.route.js -> src/controllers/vendor.controller.js (getVendorById). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -9552,7 +9735,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/vendor.route.js -> controllers/vendor.controller.js (updateVendor). Requires token. Sample fields must be replaced with your test data.",
+            "description": "Source: src/routes/vendor.route.js -> src/controllers/vendor.controller.js (updateVendor). Requires token. Sample fields must be replaced with your test data.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Sample\",\n  \"companyName\": \"Test Vendor Company\",\n  \"displayName\": \"Test Vendor\",\n  \"address\": \"Sample street\",\n  \"workPhone\": \"9000000001\",\n  \"mobile\": \"9000000001\",\n  \"bankDetails\": {\n    \"accountNumber\": \"1234567890\",\n    \"accountName\": \"Test Vendor\",\n    \"bankName\": \"Test Bank\",\n    \"branchName\": \"Main\",\n    \"ifscCode\": \"TEST0000001\"\n  }\n}",
@@ -9590,7 +9773,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Source: routes/vendor.route.js -> controllers/vendor.controller.js (deleteVendor). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/vendor.route.js -> src/controllers/vendor.controller.js (deleteVendor). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         }
@@ -9625,7 +9808,7 @@
                 "live-snapshot"
               ]
             },
-            "description": "Source: routes/branch.report.route.js -> controllers/branch.report.controller.js (getLiveBranchSnapshot). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/branch.report.route.js -> src/controllers/branch.report.controller.js (getLiveBranchSnapshot). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         },
@@ -9655,7 +9838,7 @@
                 "live-status"
               ]
             },
-            "description": "Source: routes/branch.report.route.js -> controllers/branch.report.controller.js (getLiveStatus). Requires token. Sample fields must be replaced with your test data."
+            "description": "Source: src/routes/branch.report.route.js -> src/controllers/branch.report.controller.js (getLiveStatus). Requires token. Sample fields must be replaced with your test data."
           },
           "response": []
         }

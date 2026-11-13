@@ -2,14 +2,16 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
-import { Booking } from '../models/booking.model.js';
-import bookingController from '../controllers/booking.controller.js';
-import { createApp } from '../app.js';
-import router from '../routes/index.js';
-import { getReportPagination, paginationMetadata, paginateReportPayload, queryReportPage, queryGroupedReportPage, REPORT_PATHS } from '../utils/report-pagination.js';
+import Staff from "../src/models/admin.auth.model.js";
+import Company from "../src/models/company.model.js";
+import { Booking } from "../src/models/booking.model.js";
+import bookingController from "../src/controllers/booking.controller.js";
+import { createApp } from "../src/app.js";
+import router from "../src/routes/index.js";
+import { getReportPagination, paginationMetadata, paginateReportPayload, queryReportPage, queryGroupedReportPage, REPORT_PATHS } from "../src/utils/report-pagination.js";
 
 const companyId = '507f1f77bcf86cd799439011';
-const user = { companyId, id: '507f1f77bcf86cd799439012', role: 'employee', branchId: 'MAIN001' };
+const user = { companyId, id: '507f1f77bcf86cd799439012', role: 'staff', branchId: 'MAIN001' };
 const response = () => ({ statusCode: 200, status(value) { this.statusCode = value; return this; }, json(value) { this.body = value; return this; } });
 
 test('every covered report handler is mounted with pagination validation', () => {
@@ -144,6 +146,9 @@ test('booking type reports keep employee branch filters in both page and total q
   assert.equal(res.body.pagination.totalRecords, 1);
 });
 test('all paginated report routes reject bad page parameters before database access', async t => {
+  // Auth now verifies the current account before reaching report input validation.
+  t.mock.method(Staff,'findOne',()=>({select:()=>({lean:async()=>({...user,role:'company_admin',branchId:null})})}));
+  t.mock.method(Company,'findById',()=>({select:()=>({lean:async()=>({_id:companyId,isBlocked:false})})}));
   const oldSecret = process.env.JWT_SECRET;
   process.env.JWT_SECRET = 'pagination-test-only';
   process.env.NODE_ENV = 'test';

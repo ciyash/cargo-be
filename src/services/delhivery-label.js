@@ -1,0 +1,12 @@
+import bwipjs from 'bwip-js';
+import { ApiError } from '../utils/api-error.js';
+const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+export function delhiveryLabel(booking,connection,slip){
+  if(!/^\d{8,30}$/.test(booking.provider?.awb||''))throw new ApiError(409,'A confirmed Delhivery AWB is required');
+  const records=slip?.packages;
+  if(!Array.isArray(records)||!records.length)throw new ApiError(502,'Delhivery packing slip is not available yet');
+  const record=records.find(p=>String(p.wbn||p.waybill||booking.provider.awb)===String(booking.provider.awb));
+  if(!record)throw new ApiError(409,'Packing slip AWB does not match this booking');
+  const barcode=bwipjs.toSVG({bcid:'code128',text:booking.provider.awb,scale:2,height:14,includetext:true,paddingwidth:12});
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'"><title>Delhivery ${esc(booking.provider.awb)}</title><style>@page{size:100mm 150mm;margin:5mm}body{font:13px Arial;margin:12px;max-width:90mm}h1{font-size:22px}h2{font-size:17px}section{border-top:1px solid #000;padding:8px 0}svg{width:100%;height:auto;max-height:80px}p{margin:4px 0;overflow-wrap:anywhere}button{padding:8px}@media print{button{display:none}}</style></head><body><button onclick="window.print()">Print / Save PDF</button><h1>Delhivery · Prepaid</h1><p>${esc(booking.provider.courierName)} · ${esc(record.sort_code||record.routing_code||'')}</p>${barcode}<section><h2>Deliver to</h2><p><b>${esc(booking.receiverName)}</b></p><p>${esc(booking.receiverAddress)}</p><p>${esc(booking.toCity)}, ${esc(booking.receiverState)} ${esc(booking.destinationPostalCode)}</p><p>Phone: ${esc(booking.receiverMobile)}</p></section><section><p>Order: ${esc(booking.companyId)}-${esc(booking.grnNo)}</p><p>LR: ${esc(booking.lrNumber)}</p><p>Invoice: ${esc(booking.shippingInvoice)} · Goods value: INR ${esc(booking.valueOfGoods)}</p><p>Contents: ${esc(booking.packages?.[0]?.contains)}</p><p>HSN: ${esc(booking.hsCode)} · Seller GSTIN: ${esc(connection.sellerGst)}</p></section><section><h2>Pickup / return</h2><p>${esc(booking.provider.pickupLocation)}</p><p>${esc(booking.senderName)}</p><p>${esc(booking.senderAddress)}</p><p>PIN ${esc(booking.pickupPostalCode)} · ${esc(booking.senderMobile)}</p></section></body></html>`;
+}

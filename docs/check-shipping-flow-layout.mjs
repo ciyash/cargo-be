@@ -1,0 +1,18 @@
+import fs from 'node:fs/promises';
+const targets=await (await fetch('http://127.0.0.1:9227/json')).json();
+const tab=targets.find(t=>t.type==='page'&&t.url.includes('CargoNest-Complete-Shipping-Flow.html'));
+if(!tab)throw Error('Open the generated document in Chrome with remote-debugging-port=9227.');
+const ws=new WebSocket(tab.webSocketDebuggerUrl);
+await new Promise((resolve,reject)=>{ws.onopen=resolve;ws.onerror=reject;});
+let id=0;const pending=new Map();ws.onmessage=e=>{const r=JSON.parse(e.data);if(r.id){const p=pending.get(r.id);pending.delete(r.id);r.error?p.reject(Error(r.error.message)):p.resolve(r.result);}};
+const call=(method,params={})=>new Promise((resolve,reject)=>{const key=++id;pending.set(key,{resolve,reject});ws.send(JSON.stringify({id:key,method,params}));});
+const expression=`Array.from(document.querySelectorAll('.page')).map((page,i)=>{const children=Array.from(page.children).filter(e=>e.tagName!=='HEADER'&&e.tagName!=='FOOTER');const footer=page.querySelector('footer').getBoundingClientRect();const bottom=Math.max(...children.map(e=>e.getBoundingClientRect().bottom));const r=page.getBoundingClientRect();return {page:i+1,title:page.querySelector('h1').innerText.replaceAll('\\n',' '),contentBottom:Math.round(bottom-r.top),footerTop:Math.round(footer.top-r.top),clearance:Math.round(footer.top-bottom),overflow:page.scrollWidth>page.clientWidth};})`;
+const result=await call('Runtime.evaluate',{expression,returnByValue:true});
+const layout=result.result.value;
+console.log(JSON.stringify(layout,null,2));
+if(layout.length!==14||layout.some(p=>p.clearance<12||p.overflow))process.exitCode=1;
+await call('Emulation.setDeviceMetricsOverride',{width:1000,height:1200,deviceScaleFactor:1,mobile:false});
+const shot=await call('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+await fs.writeFile(new URL('./CargoNest-Flow-Cover.png',import.meta.url),Buffer.from(shot.data,'base64'));
+await call('Browser.close');
+ws.close();

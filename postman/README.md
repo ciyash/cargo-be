@@ -1,14 +1,14 @@
 # Cargo Logistics API testing
 
-Import `cargo-logistics.postman_collection.json` into Postman. It contains all 219 active requests in the 18 routers mounted by `routes/index.js`, plus the `/health` request (220 requests total). Requests contain sample JSON, URL parameters, query parameters where used, and the authentication required by their route. Unmounted routers such as `all.route.js`, admin/user modules and voucher collection are excluded because the server does not expose them.
+Import `cargo-logistics.postman_collection.json` into Postman. It contains the current 17 routers mounted by `src/routes/index.js`, plus `/health` (225 generated requests total). Requests contain sample JSON, URL parameters, query parameters where used, and the authentication required by their route. Unmounted routers such as `all.route.js`, admin/user modules and voucher collection are excluded because the server does not expose them.
 
 ## Setup
 
-1. Start the backend with `node server.js`. It needs your existing MongoDB connection and JWT secrets configured. The default URL is `http://localhost:4000`; there is no `/api` prefix. If your server uses a different port, change the collection variable `baseUrl`.
+1. Start the backend with `npm.cmd start`. It needs your existing MongoDB connection and JWT secrets configured. The default URL is `http://localhost:4000`; there is no `/api` prefix. If your server uses a different port, change the collection variable `baseUrl`.
 2. Open the imported collection's **Variables** tab. Set `companyEmail`, `companyPassword`, `identifier` (staff email, username or phone), and `password` to your test credentials.
 3. Send **POST /company/subsidiary/login**. Its post-response script saves `companyToken` into collection variables.
 4. Send **POST /subadmin-auth/login**. Its post-response script saves the staff `token`. Company tokens and staff tokens are different and cannot be interchanged.
-5. Fill in IDs and sample fields before sending the remaining requests. Send individual requests: the collection includes deletes, password changes, subscription changes, booking updates and an external Shiprocket order creation request.
+5. Fill in IDs and sample fields before sending the remaining requests. Send individual requests: the collection includes deletes, password changes, subscription changes, booking updates.
 
 For a new test account, register a company, log in as that company, then use `POST /subadmin-auth/signup-by-company` to create an `admin`. Log in as the admin to create branches and employees. For employee signup, set `role` to `employee` and supply `branchId`. Some operations require an employee with a branch or a specific role.
 

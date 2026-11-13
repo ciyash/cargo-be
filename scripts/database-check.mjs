@@ -1,12 +1,12 @@
 import 'dotenv/config';
 import mongoose from 'mongoose';
-import '../models/bank.model.js';
-import '../models/item.model.js';
-import '../models/vendor.model.js';
-import '../models/expensive.model.js';
-import '../models/booking.model.js';
-import '../models/pracel.loading.model.js';
-import '../models/parcel.unloading.model.js';
+import "../src/models/bank.model.js";
+import "../src/models/item.model.js";
+import "../src/models/vendor.model.js";
+import "../src/models/expensive.model.js";
+import "../src/models/booking.model.js";
+import "../src/models/parcel.loading.model.js";
+import "../src/models/parcel.unloading.model.js";
 
 // Read-only deployment preflight. Does not migrate records or create indexes.
 try {

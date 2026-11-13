@@ -2,27 +2,27 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';  
 import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
-import Counter from '../models/counter.model.js';
-import ParcelLoading from '../models/pracel.loading.model.js';
-import ParcelUnloading from '../models/parcel.unloading.model.js';
-import { Booking } from '../models/booking.model.js';
-import Branch from '../models/branch.model.js';
-import Company from '../models/company.model.js';
-import Subadmin from '../models/subadmin.auth.model.js';
-import { validateParcelInput, recordParcel } from '../services/parcel-workflow.js';
-import { nextSequence } from '../services/sequence.js';
-import { deliverBooking } from '../services/delivery-workflow.js';
-import { createVouchers } from '../services/voucher-workflow.js';
-import CFVoucher from '../models/cf.voucher.generate.model.js';
-import { Delivery } from '../models/booking.model.js';
-import { dateRange, escapeRegex } from '../utils/api-error.js';
-import { writableFields } from '../utils/update-fields.js';
-import { validateEnvironment } from '../config/environment.js';
-import branchController from '../controllers/branch.controller.js';
-import companyController from '../controllers/company.controller.js';
-import branchReportController from '../controllers/branch.report.controller.js';
-import { Expense, BranchDailySnapshot } from '../models/expensive.model.js';
-import { createApp } from '../app.js';
+import Counter from "../src/models/counter.model.js";
+import ParcelLoading from "../src/models/parcel.loading.model.js";
+import ParcelUnloading from "../src/models/parcel.unloading.model.js";
+import { Booking } from "../src/models/booking.model.js";
+import Branch from "../src/models/branch.model.js";
+import Company from "../src/models/company.model.js";
+import Subadmin from "../src/models/admin.auth.model.js";
+import { validateParcelInput, recordParcel } from "../src/services/parcel-workflow.js";
+import { nextSequence } from "../src/services/sequence.js";
+import { deliverBooking } from "../src/services/delivery-workflow.js";
+import { createVouchers } from "../src/services/voucher-workflow.js";
+import CFVoucher from "../src/models/cf.voucher.generate.model.js";
+import { Delivery } from "../src/models/booking.model.js";
+import { dateRange, escapeRegex } from "../src/utils/api-error.js";
+import { writableFields } from "../src/utils/update-fields.js";
+import { validateEnvironment } from "../src/config/environment.js";
+import branchController from "../src/controllers/branch.controller.js";
+import companyController from "../src/controllers/company.controller.js";
+import branchReportController from "../src/controllers/branch.report.controller.js";
+import { Expense, BranchDailySnapshot } from "../src/models/expensive.model.js";
+import { createApp } from "../src/app.js";
 
 const user = { companyId: '507f1f77bcf86cd799439011', id: '507f1f77bcf86cd799439012', branchName: 'Main', branchId: 'MAIN001' };
 const input = () => ({ fromCity: 'Hyderabad', toCity: ['Vijayawada'], fromBranch: 'MAIN001', vehicalNumber: 'TS09AB1234', driverName: 'Test Driver', driverNo: 9000000001, grnNo: ['1001'], lrNumber: ['TEST/0001/1001'] });
@@ -73,6 +73,7 @@ function mockWorkflow(t, { unloading = false, rows = [booking()], failSave = fal
   t.mock.method(Model, 'findOne', () => query(null));
   t.mock.method(Counter, 'findOneAndUpdate', async () => ({ value: 100001 }));
   t.mock.method(Model, 'startSession', async () => session);
+  t.mock.method(Branch, 'findOne', () => query({name:'Selected branch',city:'Hyderabad'}));
   t.mock.method(Booking, 'find', filter => {
     assert.equal(filter.companyId, user.companyId);
     assert.deepEqual(filter.grnNo.$in, [1001]);
@@ -99,6 +100,12 @@ test('loading saves parcel and updates company bookings within the same transact
   assert.equal(state.updates[0].options.session, state.session);
   assert.equal(state.ended, 1);
 });
+test('companywide Admin loading records the selected branch without an assigned login branch',async t=>{
+ const state=mockWorkflow(t);
+ await recordParcel(input(),{...user,role:'company_admin',branchId:null,branchName:''});
+ assert.equal(state.updates[0].update.$set.loadingBranchname,'Selected branch');
+ assert.equal(state.updates[0].update.$set.ltBranch,'MAIN001');
+});
 test('branch loading accepts unloaded stock for onward transport', async t => {
   const state = mockWorkflow(t, { rows: [{ ...booking(), bookingStatus: 2 }] });
   const result = await recordParcel(input(), user, { branchTransfer: true });
@@ -107,7 +114,7 @@ test('branch loading accepts unloaded stock for onward transport', async t => {
 });
 test('branch unloading updates booking status and persists branch and vehicle fields', async t => {
   const state = mockWorkflow(t, { unloading: true, rows: [{ ...booking(), bookingStatus: 1 }] });
-  const result = await recordParcel({ ...input(), unloadBranch: 'DEST001' }, user, { unloading: true, branchTransfer: true });
+  const result = await recordParcel({ ...input(), unloadBranch: 'DEST001' }, {...user,branchId:'DEST001'}, { unloading: true, branchTransfer: true });
   assert.equal(state.updates[0].update.$set.bookingStatus, 2);
   assert.equal(result.parcel.unloadBranch, 'DEST001');
   assert.equal(result.parcel.vehicleNo, 'TS09AB1234');
@@ -116,6 +123,7 @@ test('branch unloading updates booking status and persists branch and vehicle fi
 for (const [label, options, expected] of [
   ['missing company GRNs', { rows: [] }, /Some GRNs/],
   ['mismatched LRs', { rows: [{ ...booking(), lrNumber: 'OTHER' }] }, /LR numbers do not match/],
+  ['already loaded stock', { rows: [{ ...booking(), bookingStatus: 1 }] }, /no longer available/],
   ['already delivered stock', { rows: [{ ...booking(), bookingStatus: 4 }] }, /no longer available/],
   ['concurrent status change', { matchedCount: 0 }, /Bookings changed/],
   ['parcel save failure', { failSave: true }, /Save failed/],
@@ -144,7 +152,7 @@ test('branch updates use token company scope and ignore ownership changes', asyn
   let captured;
   t.mock.method(Branch, 'findOneAndUpdate', async (...args) => { captured = args; return { name: 'Updated' }; });
   const res = response();
-  await branchController.updateBranch({ params: { id: 'record' }, user, body: { name: 'Updated', companyId: 'other', $set: { companyId: 'other' } } }, res);
+  await branchController.updateBranch({ params: { id: 'record' }, user:{...user,role:'company_admin'}, body: { name: 'Updated', companyId: 'other', $set: { companyId: 'other' } } }, res);
   assert.equal(res.statusCode, 200);
   assert.deepEqual(captured[0], { _id: 'record', companyId: user.companyId });
   assert.deepEqual(captured[1], { $set: { name: 'Updated' } });
@@ -172,7 +180,7 @@ test('delivery saves both records in one session and closes it', async t => {
     return { session: async () => row };
   });
   t.mock.method(Delivery.prototype, 'save', async function(options) { assert.equal(options.session, session); return this; });
-  const result = await deliverBooking({ grnNo: 1001, receiverName: 'Test', receiverMobile: '9000000001', toPayDeliveredAmount: 100 }, user);
+  const result = await deliverBooking({ grnNo: 1001, receiverName: 'Test', receiverMobile: '9000000001', toPayDeliveredAmount: 0 }, user);
   assert.equal(result.bookingStatus, 4);
   assert.equal(ended, 1);
 });
@@ -195,7 +203,7 @@ test('vouchers batch writes by agent safely even for prototype-like agent names'
   t.mock.method(CFVoucher, 'startSession', async () => session);
   t.mock.method(CFVoucher, 'findOne', () => query(null));
   t.mock.method(Counter, 'findOneAndUpdate', async () => ({ value: 100 }));
-  t.mock.method(Booking, 'find', () => query([{ ...booking(), agent: '__proto__', pickUpBranchname: 'Main', dropBranchname: 'Destination', senderName: 'Test', grandTotal: 100 }]));
+  t.mock.method(Booking, 'find', () => query([{ ...booking(), bookingType:'credit', pickUpBranch:user.branchId, agent: '__proto__', pickUpBranchname: 'Main', dropBranchname: 'Destination', senderName: 'Test', grandTotal: 100 }]));
   t.mock.method(CFVoucher, 'insertMany', async (rows, options) => {
     assert.equal(options.session, session);
     assert.equal(rows.length, 1);
@@ -223,7 +231,7 @@ test('voucher duplicate attempt closes session and does not insert documents', a
 test('live branch snapshot uses company ObjectIds, actual expense fields and opening balance', async t => {
   t.mock.method(Branch, 'findOne', filter => {
     assert.equal(filter.companyId, user.companyId);
-    return query({ _id: user.id, openingBalance: 50 });
+    return query({ _id: user.id, branchUniqueId:user.branchId, openingBalance: 50 });
   });
   t.mock.method(BranchDailySnapshot, 'findOne', filter => {
     assert.ok(filter.date.$lt instanceof Date);
@@ -231,14 +239,15 @@ test('live branch snapshot uses company ObjectIds, actual expense fields and ope
   });
   t.mock.method(Booking, 'aggregate', async stages => {
     assert.ok(stages[0].$match.companyId instanceof mongoose.Types.ObjectId);
-    return [{ total: 100 }];
+    return [{ total: stages[0].$match.bookingDate?.$gte ? 100 : 0 }];
   });
   t.mock.method(Expense, 'aggregate', async stages => {
     assert.ok(stages[0].$match.expenseDate);
     assert.deepEqual(stages[0].$match.branchId.$in, ['MAIN001', user.id]);
-    return [{ total: 25 }];
+    return [{ total: stages[0].$match.expenseDate.$gte ? 25 : 0 }];
   });
   const res = response();
+  t.mock.method(Delivery, 'aggregate', async () => []);
   await branchReportController.getLiveBranchSnapshot({ user, params: { branchCode: 'MAIN001' } }, res);
   assert.equal(res.statusCode, 200);
   assert.equal(res.body.closingBalance, 125);
@@ -250,13 +259,14 @@ test('mounted routes load and HTTP boundaries reject missing auth and malformed 
   await new Promise(resolve => server.once('listening', resolve));
   t.after(() => new Promise(resolve => { server.closeAllConnections(); server.close(resolve); }));
   const base = `http://127.0.0.1:${server.address().port}`;
-  for (const url of ['/branch-report/MAIN/live-snapshot', '/bank/get', '/item/get', '/vendor/get', '/booking', '/shiprocket/create-order']) {
+  for (const url of ['/branch-report/MAIN/live-snapshot', '/bank/get', '/item/get', '/vendor/get', '/booking']) {
     const res = await fetch(base + url, { method: url.includes('create-order') ? 'POST' : 'GET' });
     assert.equal(res.status, 401, url);
   }
   const malformed = await fetch(base + '/subadmin-auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{bad' });
   assert.equal(malformed.status, 400);
   assert.equal((await fetch(base + '/missing')).status, 404);
+  assert.equal((await fetch(base + '/shiprocket/create-order',{method:'POST'})).status,404);
   const health = await fetch(base + '/health');
   assert.equal(health.status, mongoose.connection.readyState === 1 ? 200 : 503);
   assert.equal(health.headers.get('x-powered-by'), null);

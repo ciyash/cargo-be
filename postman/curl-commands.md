@@ -2,6 +2,58 @@
 
 Paste any command into Postman > Import > Raw text. Replace placeholders with your own data first. These are Bash-style cURL commands; use Postman import on Windows.
 
+## GET /company/branding
+
+```bash
+curl --request GET --url 'http://localhost:4000/company/branding' --header 'Authorization: Bearer REPLACE_companyToken'
+```
+
+## POST /company/register
+
+```bash
+curl --request POST --url 'http://localhost:4000/company/register' --header 'Content-Type: application/json' --data-raw '{}'
+```
+
+## POST /company/login
+
+```bash
+curl --request POST --url 'http://localhost:4000/company/login' --header 'Content-Type: application/json' --data-raw '{
+  "email": "company@example.com",
+  "password": "ChangeMe123!"
+}'
+```
+
+## GET /company/branches
+
+```bash
+curl --request GET --url 'http://localhost:4000/company/branches' --header 'Authorization: Bearer REPLACE_companyToken'
+```
+
+## POST /company/branches
+
+```bash
+curl --request POST --url 'http://localhost:4000/company/branches' --header 'Authorization: Bearer REPLACE_companyToken' --header 'Content-Type: application/json' --data-raw '{
+  "name": "Sample",
+  "openingBalance": 0,
+  "branchType": "normal",
+  "city": "Hyderabad",
+  "cityId": "Sample cityId",
+  "location": "Main Road",
+  "branchDate": "2026-10-29",
+  "branchStatus": "Sample branchStatus",
+  "address": "Sample street",
+  "phone": "9000000001",
+  "pincode": 500001,
+  "state": "Telangana",
+  "country": "India",
+  "alternateMobile": "Sample alternateMobile",
+  "ownershipType": "Sample ownershipType",
+  "servicePostalCodes": "Sample servicePostalCodes",
+  "courierPickupLocation": "Sample courierPickupLocation",
+  "delhiveryPickupLocation": "Sample delhiveryPickupLocation"
+}'
+```
+
 ## POST /company/subsidiary/register
 
 ```bash
@@ -13,7 +65,8 @@ curl --request POST --url 'http://localhost:4000/company/subsidiary/register' --
   "phone": "9000000001",
   "address": "Sample street",
   "state": "Telangana",
-  "customerName": "Sample customerName"
+  "customerName": "Sample customerName",
+  "logoText": "Sample logoText"
 }'
 ```
 
@@ -42,7 +95,8 @@ curl --request GET --url 'http://localhost:4000/company/get-companies' --header 
 
 ```bash
 curl --request PATCH --url 'http://localhost:4000/company/update' --header 'Authorization: Bearer REPLACE_companyToken' --header 'Content-Type: application/json' --data-raw '{
-  "name": "Updated Company"
+  "logoText": "Sample logoText",
+  "password": "ChangeMe123!"
 }'
 ```
 
@@ -61,10 +115,7 @@ curl --request DELETE --url 'http://localhost:4000/company/delete/REPLACE_id' --
 ## POST /company/subscription
 
 ```bash
-curl --request POST --url 'http://localhost:4000/company/subscription' --header 'Authorization: Bearer REPLACE_companyToken' --header 'Content-Type: application/json' --data-raw '{
-  "plan": "monthly",
-  "bookingLimit": 1000
-}'
+curl --request POST --url 'http://localhost:4000/company/subscription' --header 'Authorization: Bearer REPLACE_companyToken' --header 'Content-Type: application/json' --data-raw '{}'
 ```
 
 ## GET /company/check/membership/:companyId
@@ -94,7 +145,8 @@ curl --request POST --url 'http://localhost:4000/subadmin-auth/signup-by-company
   "branchId": "REPLACE_branchId",
   "location": "Main Road",
   "documents": [],
-  "role": "admin"
+  "role": "company_admin",
+  "branchCity": "Sample branchCity"
 }'
 ```
 
@@ -111,7 +163,8 @@ curl --request POST --url 'http://localhost:4000/subadmin-auth/signup' --header 
   "branchId": "REPLACE_branchId",
   "location": "Main Road",
   "documents": [],
-  "role": "admin"
+  "role": "company_admin",
+  "branchCity": "Sample branchCity"
 }'
 ```
 
@@ -120,7 +173,8 @@ curl --request POST --url 'http://localhost:4000/subadmin-auth/signup' --header 
 ```bash
 curl --request POST --url 'http://localhost:4000/subadmin-auth/login' --header 'Content-Type: application/json' --data-raw '{
   "identifier": "admin@example.com",
-  "password": "ChangeMe123!"
+  "password": "ChangeMe123!",
+  "companyId": "REPLACE_companyId"
 }'
 ```
 
@@ -161,13 +215,19 @@ curl --request PATCH --url 'http://localhost:4000/subadmin-auth/admin-profile' -
 
 ```bash
 curl --request PATCH --url 'http://localhost:4000/subadmin-auth/update-profile/REPLACE_id' --header 'Authorization: Bearer REPLACE_token' --header 'Content-Type: application/json' --data-raw '{
-  "email": "sample@example.com",
-  "phone": "9000000001",
   "name": "Sample",
-  "location": "Main Road",
-  "documents": [],
-  "address": "Sample street",
+  "email": "sample@example.com",
+  "username": "sample_admin",
+  "phone": "9000000001",
   "password": "ChangeMe123!"
+}'
+```
+
+## PATCH /subadmin-auth/account-status/:id
+
+```bash
+curl --request PATCH --url 'http://localhost:4000/subadmin-auth/account-status/REPLACE_id' --header 'Authorization: Bearer REPLACE_companyToken' --header 'Content-Type: application/json' --data-raw '{
+  "isBlocked": "Sample isBlocked"
 }'
 ```
 
@@ -220,16 +280,20 @@ curl --request POST --url 'http://localhost:4000/branch' --header 'Authorization
   "openingBalance": 0,
   "branchType": "normal",
   "city": "Hyderabad",
+  "cityId": "Sample cityId",
   "location": "Main Road",
   "branchDate": "2026-10-29",
   "branchStatus": "Sample branchStatus",
   "address": "Sample street",
   "phone": "9000000001",
-  "email": "sample@example.com",
   "pincode": 500001,
   "state": "Telangana",
   "country": "India",
-  "alternateMobile": "Sample alternateMobile"
+  "alternateMobile": "Sample alternateMobile",
+  "ownershipType": "Sample ownershipType",
+  "servicePostalCodes": "Sample servicePostalCodes",
+  "courierPickupLocation": "Sample courierPickupLocation",
+  "delhiveryPickupLocation": "Sample delhiveryPickupLocation"
 }'
 ```
 
@@ -270,7 +334,9 @@ curl --request GET --url 'http://localhost:4000/branch/REPLACE_id' --header 'Aut
 
 ```bash
 curl --request PATCH --url 'http://localhost:4000/branch/update/REPLACE_id' --header 'Authorization: Bearer REPLACE_token' --header 'Content-Type: application/json' --data-raw '{
-  "name": "Updated Branch"
+  "cityId": "Sample cityId",
+  "city": "Hyderabad",
+  "country": "India"
 }'
 ```
 
@@ -472,13 +538,7 @@ curl --request PATCH --url 'http://localhost:4000/booking/update/REPLACE_id' --h
 ## POST /booking/cancelBooking/:grnNo
 
 ```bash
-curl --request POST --url 'http://localhost:4000/booking/cancelBooking/1001' --header 'Authorization: Bearer REPLACE_token' --header 'Content-Type: application/json' --data-raw '{
-  "refundAmount": 0,
-  "cancelDate": "2026-10-29",
-  "cancelByUser": "REPLACE_id",
-  "cancelBranch": "Sample cancelBranch",
-  "cancelCity": "Sample cancelCity"
-}'
+curl --request POST --url 'http://localhost:4000/booking/cancelBooking/1001' --header 'Authorization: Bearer REPLACE_token' --header 'Content-Type: application/json' --data-raw '{}'
 ```
 
 ## POST /booking/markParcelAsMissing/:grnNo
@@ -1118,12 +1178,7 @@ curl --request POST --url 'http://localhost:4000/parcel-loading/dispatched-stock
 ## POST /multi-router/cities
 
 ```bash
-curl --request POST --url 'http://localhost:4000/multi-router/cities' --header 'Authorization: Bearer REPLACE_token' --header 'Content-Type: application/json' --data-raw '{
-  "cityName": "Sample cityName",
-  "state": "Telangana",
-  "code": "Sample code",
-  "address": "Sample street"
-}'
+curl --request POST --url 'http://localhost:4000/multi-router/cities' --header 'Authorization: Bearer REPLACE_token' --header 'Content-Type: application/json' --data-raw '{}'
 ```
 
 ## GET /multi-router/cities
@@ -1149,11 +1204,7 @@ curl --request DELETE --url 'http://localhost:4000/multi-router/cities/REPLACE_i
 ## POST /multi-router/cities/delete-cities
 
 ```bash
-curl --request POST --url 'http://localhost:4000/multi-router/cities/delete-cities' --header 'Authorization: Bearer REPLACE_token' --header 'Content-Type: application/json' --data-raw '{
-  "cityIds": [
-    "REPLACE_id"
-  ]
-}'
+curl --request POST --url 'http://localhost:4000/multi-router/cities/delete-cities' --header 'Authorization: Bearer REPLACE_token' --header 'Content-Type: application/json' --data-raw '{}'
 ```
 
 ## POST /multi-router/dispatch-types
@@ -1371,7 +1422,8 @@ curl --request POST --url 'http://localhost:4000/parcel-unloading/parcel-filter-
   "toCity": "Vijayawada",
   "branch": "REPLACE_pickUpBranch",
   "bookingType": "paid",
-  "bookingStatus": 0
+  "bookingStatus": 0,
+  "vehicalNumber": "TS09AB1234"
 }'
 ```
 
@@ -1478,40 +1530,6 @@ curl --request POST --url 'http://localhost:4000/parcel-unloading/branch-to-bran
     "REPLACE_WITH_EXISTING_LR"
   ],
   "remarks": "Postman test"
-}'
-```
-
-## POST /shiprocket/create-order
-
-```bash
-curl --request POST --url 'http://localhost:4000/shiprocket/create-order' --header 'Authorization: Bearer REPLACE_token' --header 'Content-Type: application/json' --data-raw '{
-  "order_id": "TEST-{{$timestamp}}",
-  "order_date": "2026-10-29",
-  "pickup_location": "REPLACE_WITH_SHIPROCKET_PICKUP_LOCATION",
-  "billing_customer_name": "Test",
-  "billing_last_name": "Customer",
-  "billing_address": "Sample street",
-  "billing_city": "Hyderabad",
-  "billing_pincode": 500001,
-  "billing_state": "Telangana",
-  "billing_country": "India",
-  "billing_email": "test@example.com",
-  "billing_phone": 9000000001,
-  "shipping_is_billing": true,
-  "order_items": [
-    {
-      "name": "Test Item",
-      "sku": "TEST001",
-      "units": 1,
-      "selling_price": 100
-    }
-  ],
-  "payment_method": "Prepaid",
-  "sub_total": 100,
-  "length": 10,
-  "breadth": 10,
-  "height": 10,
-  "weight": 0.5
 }'
 ```
 
@@ -1717,7 +1735,8 @@ curl --request GET --url 'http://localhost:4000/expensive/expenses/REPLACE_id' -
 
 ```bash
 curl --request PATCH --url 'http://localhost:4000/expensive/expenses/REPLACE_id' --header 'Authorization: Bearer REPLACE_token' --header 'Content-Type: application/json' --data-raw '{
-  "amount": 200
+  "branchId": "REPLACE_branchId",
+  "amount": 100
 }'
 ```
 
