@@ -25,6 +25,7 @@ export function createApp() {
     app.use(cors({
       origin: [
         'https://cargo-mk89qzz68-ciyashs-projects.vercel.app',
+        'https://cargo-fe-tau.vercel.app',
         'http://localhost:4200',
         ...origins,
       ],
