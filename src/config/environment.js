@@ -10,7 +10,7 @@ export function validateEnvironment(env = process.env) {
     }
     if(env.JWT_SECRET===env.COMPANY_SECRET)throw new Error('Production staff and company secrets must be different');
     const origins=(env.CORS_ORIGINS||'').split(',').map(value=>value.trim()).filter(Boolean);
-    if(!origins.length||origins.some(origin=>{try{return !['http:','https:'].includes(new URL(origin).protocol)||new URL(origin).origin!==origin;}catch{return true;}}))throw new Error('Production requires an explicit CORS_ORIGINS list of exact HTTP(S) origins');
+    if(origins.some(origin=>{try{return !['http:','https:'].includes(new URL(origin).protocol)||new URL(origin).origin!==origin;}catch{return true;}}))throw new Error('CORS_ORIGINS must contain exact HTTP(S) origins');
   }
   return { port };
 }

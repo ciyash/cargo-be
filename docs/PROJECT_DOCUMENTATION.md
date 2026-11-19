@@ -405,7 +405,7 @@ Use .env.example as the template. Keep actual values private and untracked. Neve
 | RAZORPAY_KEY_SECRET | Server-only API/signature secret |
 | RAZORPAY_WEBHOOK_SECRET | Server-only webhook secret |
 
-Startup requires MONGO_URI, JWT_SECRET and COMPANY_SECRET. Owner/payment configuration is validated when those features are used. Empty CORS_ORIGINS currently results in permissive CORS rather than an explicit allowlist.
+Startup requires MONGO_URI, JWT_SECRET and COMPANY_SECRET. Owner/payment configuration is validated when those features are used. With empty CORS_ORIGINS, production serves same-origin browser requests without adding cross-origin headers. Development uses default CORS. Set CORS_ORIGINS to allow a frontend hosted on a separate origin.
 
 Set the intended API URL in both Angular environment files. Backend .env changes do not change the Angular URL. Restart/rebuild the relevant process after configuration changes.
 
