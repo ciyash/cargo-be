@@ -15,7 +15,9 @@ const response=()=>Object.assign(new EventEmitter(),{statusCode:200,body:null,he
 test('production refuses short/shared signing secrets and an unconfigured/wildcard CORS policy',()=>{
  const env={NODE_ENV:'production',MONGO_URI:'test',JWT_SECRET:'a'.repeat(40),COMPANY_SECRET:'b'.repeat(40),CORS_ORIGINS:'https://crm.example.test'};
  assert.equal(validateEnvironment(env).port,4000);
- assert.throws(()=>validateEnvironment({...env,JWT_SECRET:'short'}),/32 characters/);
+ assert.throws(()=>validateEnvironment({...env,JWT_SECRET:'short'}),/32 characters\. Update: JWT_SECRET$/);
+ assert.throws(()=>validateEnvironment({...env,COMPANY_SECRET:'short'}),/32 characters\. Update: COMPANY_SECRET$/);
+ assert.throws(()=>validateEnvironment({...env,JWT_SECRET:'short',COMPANY_SECRET:'short'}),/32 characters\. Update: JWT_SECRET, COMPANY_SECRET$/);
  assert.throws(()=>validateEnvironment({...env,COMPANY_SECRET:env.JWT_SECRET}),/different/);
  assert.throws(()=>validateEnvironment({...env,CORS_ORIGINS:''}),/CORS_ORIGINS/);
  assert.throws(()=>validateEnvironment({...env,CORS_ORIGINS:'*'}),/CORS_ORIGINS/);
