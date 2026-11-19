@@ -19,10 +19,16 @@ export function createApp() {
     .split(',')
     .map(origin => origin.trim())
     .filter(Boolean);
-  if (origins.length) {
-    app.use(cors({ origin: origins }));
-  } else if (process.env.NODE_ENV !== 'production') {
+  if (!origins.length && process.env.NODE_ENV !== 'production') {
     app.use(cors());
+  } else {
+    app.use(cors({
+      origin: [
+        'https://cargo-mk89qzz68-ciyashs-projects.vercel.app',
+        'http://localhost:4200',
+        ...origins,
+      ],
+    }));
   }
   if (process.env.NODE_ENV !== 'test') app.use(morgan('dev'));
 
@@ -69,3 +75,4 @@ export function createApp() {
 
   return app;
 }
+  
