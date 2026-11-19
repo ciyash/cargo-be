@@ -2,7 +2,7 @@
 
 ## Application lifecycle
 
-`src/server.js` resolves the root environment file, validates configuration, connects to MongoDB and starts `createApp()` from `src/app.js`. Shutdown closes HTTP connections and the database connection. The root `app.js` remains a compatibility export. The only server entry point is `src/server.js`.
+`src/server.js` resolves the root environment file, validates configuration, connects to MongoDB and starts `createApp()` from `src/app.js`. Shutdown closes HTTP connections and the database connection. The only server entry point is `src/server.js`.
 
 `src/app.js` owns security headers, CORS, request parsing, authentication throttling, webhook ordering, route mounting, health checks and final error handling. The raw Razorpay webhook handler still runs before JSON parsing.
 

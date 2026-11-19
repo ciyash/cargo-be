@@ -1,15 +1,17 @@
 import 'dotenv/config';
-import dotenv from 'dotenv';
-import { fileURLToPath } from 'node:url';
+
 import mongoose from 'mongoose';
 import { createApp } from './app.js';
 import { validateEnvironment } from './config/environment.js';
 
-// Resolve runtime configuration from this checkout even when launched elsewhere.
-dotenv.config({ path: fileURLToPath(new URL("../.env", import.meta.url)) });
-
 let server;
 let stopping = false;
+
+function logMongoError(message, error) {
+  // Driver messages can contain connection details. Log only the error type and code.
+  const details = [error.name, error.code].filter(Boolean).join(', ');
+  console.error(`[MongoDB] ${message}${details ? ` (${details})` : ''}`);
+}
 
 // Stop accepting requests, finish pending work, then disconnect MongoDB.
 async function shutdown() {
@@ -49,17 +51,36 @@ async function start() {
 
   // 2. Connect to MongoDB before accepting requests.
   mongoose.set('bufferCommands', false);
-  await mongoose.connect(process.env.MONGO_URI, {
-    serverSelectionTimeoutMS: 10000,
-    maxPoolSize: 20,
-    minPoolSize: 0,
-    autoIndex: process.env.NODE_ENV !== 'production',
-  });
+  console.log('[MongoDB] Connecting...');
+  try {
+    await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 10000,
+      maxPoolSize: 20,
+      minPoolSize: 0,
+      autoIndex: process.env.NODE_ENV !== 'production',
+    });
+  } catch (error) {
+    logMongoError('Connection failed', error);
+    process.exitCode = 1;
+    await shutdown();
+    return;
+  }
 
   if (stopping) {
     await mongoose.disconnect();
     return;
   }
+
+  console.log('[MongoDB] Connected');
+  mongoose.connection.on('disconnected', () => {
+    if (!stopping) console.error('[MongoDB] Disconnected');
+  });
+  mongoose.connection.on('reconnected', () => {
+    if (!stopping) console.log('[MongoDB] Reconnected');
+  });
+  mongoose.connection.on('error', error => {
+    if (!stopping) logMongoError('Connection error', error);
+  });
 
   // 3. Start the Express app defined in app.js.
   const app = createApp();
@@ -82,11 +103,7 @@ process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
 start().catch(async error => {
-  const message = error.name === 'MongooseServerSelectionError'
-    ? 'Database unavailable'
-    : error.message;
-
-  console.error('Backend startup failed:', message);
+  console.error('Backend startup failed:', error.message);
   process.exitCode = 1;
-  await mongoose.disconnect();
+  await shutdown();
 });

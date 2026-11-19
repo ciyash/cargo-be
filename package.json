@@ -2,7 +2,7 @@
   "type": "module",
   "main": "src/server.js",
   "scripts": {
-    "start": "nodemon",
+    "start": "node src/server.js",
     "dev": "nodemon",
     "start:prod": "node src/server.js",
     "check": "node scripts/check-source.mjs",

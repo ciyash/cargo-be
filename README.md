@@ -20,7 +20,6 @@ cargo-logistics/
 â”œâ”€â”€ postman/            API collection generation and artifacts
 â”œâ”€â”€ docs/               Workflow, implementation and migration documentation
 â”œâ”€â”€ prototypes/         Existing demo workflows
-â”œâ”€â”€ app.js              Compatibility export for existing imports
 ```
 
 HTTP requests follow `routes â†’ middleware â†’ controllers â†’ services â†’ models`. New business rules should live in services so they can be checked without duplicating request handlers. Existing large report controllers remain in place; this structure change does not change their calculations or endpoints.
@@ -30,7 +29,7 @@ HTTP requests follow `routes â†’ middleware â†’ controllers â†’ s
 Use the project root as the working directory. Configure the existing root `.env` using `.env.example`; never commit credentials.
 
 ```powershell
-npm.cmd start        # nodemon src/server.js
+npm.cmd start        # node src/server.js
 npm.cmd run dev      # nodemon src/server.js
 npm.cmd run start:prod # node src/server.js
 npm.cmd run check    # syntax and relative imports
@@ -38,6 +37,8 @@ npm.cmd test         # backend behavior and authorization tests
 ```
 
 Start with `npm.cmd start` or `node src/server.js`. `/health` reports database readiness. Frontend/API URLs and MongoDB collection names are preserved.
+
+For backend hosting, deploy from Git so ignored local files stay out of the deployment. Use `npm ci --omit=dev` to install and `npm start` to launch. Set `NODE_ENV=production` and the required environment variables from `.env.example` in the hosting dashboard. Use `/health` for the readiness check.
 
 ## Roles
 
